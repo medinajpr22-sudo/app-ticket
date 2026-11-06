@@ -46,6 +46,20 @@ export const navigation: NavigationSection[] = [
                 icon: 'users',
                 permission: 'teams.manage',
             },
+            {
+                label: 'Categorías',
+                routeName: 'management.categories.index',
+                activePattern: 'management.categories.*',
+                icon: 'tag',
+                permission: 'categories.manage',
+            },
+            {
+                label: 'SLA y horarios',
+                routeName: 'management.service-levels.index',
+                activePattern: 'management.service-levels.*',
+                icon: 'clock',
+                permission: 'sla_policies.manage',
+            },
         ],
     },
 ];

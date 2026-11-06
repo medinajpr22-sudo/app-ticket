@@ -7,7 +7,7 @@ export default function Select({
     ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
     return (
-        <select {...props} className={`${fieldClasses} pe-10 ${className}`}>
+        <select {...props} className={fieldClasses(`pe-10 ${className}`)}>
             {children}
         </select>
     );

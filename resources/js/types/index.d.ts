@@ -72,6 +72,65 @@ export interface Team {
     members?: TeamMember[];
 }
 
+export type TicketPriorityValue = 'critical' | 'high' | 'medium' | 'low';
+
+export type TicketTypeValue = 'incident' | 'service_request';
+
+export interface BusinessHour {
+    weekday: number;
+    label: string;
+    opens_at: string;
+    closes_at: string;
+}
+
+export interface Holiday {
+    id: number;
+    name: string;
+    date: string;
+}
+
+export interface BusinessCalendar {
+    id: number;
+    name: string;
+    timezone: string;
+    is_default: boolean;
+    hours?: BusinessHour[];
+    holidays?: Holiday[];
+    holidays_count?: number;
+}
+
+export interface SlaTarget {
+    priority: TicketPriorityValue;
+    label: string;
+    first_response_minutes: number;
+    resolution_minutes: number;
+}
+
+export interface SlaPolicy {
+    id: number;
+    business_calendar_id: number;
+    name: string;
+    description: string | null;
+    is_default: boolean;
+    business_calendar?: BusinessCalendar;
+    targets?: SlaTarget[];
+    categories_count?: number;
+}
+
+export interface Category {
+    id: number;
+    team_id: number;
+    sla_policy_id: number | null;
+    name: string;
+    description: string | null;
+    icon: IconName;
+    default_ticket_type: Option<TicketTypeValue>;
+    is_visible: boolean;
+    sort_order: number;
+    team?: Team;
+    sla_policy?: SlaPolicy | null;
+}
+
 export interface PaginationLink {
     url: string | null;
     label: string;

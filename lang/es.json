@@ -5,5 +5,19 @@
     "User created.": "Usuario creado.",
     "User updated.": "Cambios guardados.",
     "Team created.": "Equipo creado.",
-    "Team updated.": "Cambios guardados."
+    "Team updated.": "Cambios guardados.",
+    "Category created.": "Categoría creada.",
+    "Category updated.": "Cambios guardados.",
+    "SLA policy created.": "Política de SLA creada.",
+    "SLA policy updated.": "Cambios guardados.",
+    "Business calendar created.": "Horario creado.",
+    "Business calendar updated.": "Cambios guardados.",
+    "This team already has a category with that name.": "Este equipo ya tiene una categoría con ese nombre.",
+    "Choose an active team.": "Elige un equipo activo.",
+    "The resolution time cannot be shorter than the first response time.": "La resolución no puede tomar menos tiempo que la primera respuesta.",
+    "There must always be a default policy. Mark another one as default instead.": "Siempre debe haber una política predeterminada. Marca otra como predeterminada en su lugar.",
+    "There must always be a default calendar. Mark another one as default instead.": "Siempre debe haber un horario predeterminado. Marca otro como predeterminado en su lugar.",
+    "The closing time must be later than the opening time.": "La hora de cierre debe ser posterior a la de apertura.",
+    "This date is already in the list.": "Esta fecha ya está en la lista.",
+    "Choose at least one working day.": "Elige al menos un día laborable."
 }

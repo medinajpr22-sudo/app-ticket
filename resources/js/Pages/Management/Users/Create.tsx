@@ -1,5 +1,6 @@
 import PageHeader from '@/Components/ui/PageHeader';
 import AppLayout from '@/Layouts/AppLayout';
+import { formSubmitOptions } from '@/lib/formSubmitOptions';
 import { Department, Location, Role, Team } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -31,7 +32,7 @@ export default function Create({
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        form.post(route('management.users.store'));
+        form.post(route('management.users.store'), formSubmitOptions);
     };
 
     return (

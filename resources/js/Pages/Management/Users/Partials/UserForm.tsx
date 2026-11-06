@@ -5,6 +5,7 @@ import FormField from '@/Components/ui/FormField';
 import Icon from '@/Components/ui/Icon';
 import InputError from '@/Components/ui/InputError';
 import PrimaryButton from '@/Components/ui/PrimaryButton';
+import RadioCards from '@/Components/ui/RadioCards';
 import Select from '@/Components/ui/Select';
 import TextInput from '@/Components/ui/TextInput';
 import { classNames } from '@/lib/classNames';
@@ -113,41 +114,25 @@ export default function UserForm({
                     Rol y acceso
                 </h2>
 
-                <fieldset>
-                    <legend className="mb-2 text-sm font-extrabold">Rol</legend>
-                    <div className="grid gap-3 md:grid-cols-3">
-                        {roles.map((role) => (
-                            <label
-                                key={role.id}
-                                className={classNames(
-                                    'flex cursor-pointer flex-col gap-1 rounded-2xl border-[1.5px] p-4 transition has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
-                                    data.role_id === role.id
-                                        ? 'border-wine bg-wine text-white'
-                                        : 'border-field bg-white/85 hover:border-crimson',
-                                )}
-                            >
-                                <input
-                                    type="radio"
-                                    name="role_id"
-                                    value={role.id}
-                                    checked={data.role_id === role.id}
-                                    onChange={() => selectRole(role)}
-                                    className="sr-only"
-                                />
-                                <span className="font-extrabold">{role.label}</span>
-                                <span
-                                    className={classNames(
-                                        'text-sm font-semibold',
-                                        data.role_id === role.id ? 'text-blush' : 'text-muted',
-                                    )}
-                                >
-                                    {role.description}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                    <InputError message={errors.role_id} />
-                </fieldset>
+                <RadioCards
+                    name="role_id"
+                    legend="Rol"
+                    className="md:grid-cols-3"
+                    options={roles.map((role) => ({
+                        value: role.id,
+                        label: role.label,
+                        description: role.description,
+                    }))}
+                    value={data.role_id}
+                    onChange={(roleId) => {
+                        const role = roles.find((candidate) => candidate.id === roleId);
+
+                        if (role) {
+                            selectRole(role);
+                        }
+                    }}
+                    error={errors.role_id}
+                />
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                     <div>

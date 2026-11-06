@@ -1,5 +1,6 @@
 import PageHeader from '@/Components/ui/PageHeader';
 import AppLayout from '@/Layouts/AppLayout';
+import { formSubmitOptions } from '@/lib/formSubmitOptions';
 import { Department, Location, Role, Team, User } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -34,6 +35,7 @@ export default function Edit({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         form.put(route('management.users.update', user.id), {
+            ...formSubmitOptions,
             onFinish: () => form.reset('password'),
         });
     };

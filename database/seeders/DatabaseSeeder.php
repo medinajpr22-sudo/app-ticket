@@ -15,7 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RolePermissionSeeder::class);
+        $this->call([
+            RolePermissionSeeder::class,
+            ServiceLevelSeeder::class,
+        ]);
 
         if (! app()->isLocal()) {
             return;

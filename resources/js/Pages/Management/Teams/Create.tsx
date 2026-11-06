@@ -1,6 +1,7 @@
 import { IconName } from '@/Components/ui/Icon';
 import PageHeader from '@/Components/ui/PageHeader';
 import AppLayout from '@/Layouts/AppLayout';
+import { formSubmitOptions } from '@/lib/formSubmitOptions';
 import { DescribedOption, Option, TeamTypeValue, User } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -26,7 +27,7 @@ export default function Create({
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        form.post(route('management.teams.store'));
+        form.post(route('management.teams.store'), formSubmitOptions);
     };
 
     return (

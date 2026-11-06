@@ -2,6 +2,7 @@
 
 namespace App\Domain\Organization\Models;
 
+use App\Domain\Catalog\Models\Category;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Enums\TeamType;
 use App\Domain\Shared\Enums\Icon;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -51,6 +53,14 @@ class Team extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('is_lead')
             ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Category, $this>
+     */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
     }
 
     /**

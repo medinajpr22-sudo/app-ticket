@@ -10,7 +10,7 @@ export default function TextArea({
         <textarea
             {...props}
             rows={rows}
-            className={`${fieldClasses} resize-y ${className}`}
+            className={fieldClasses(`resize-y ${className}`)}
         />
     );
 }

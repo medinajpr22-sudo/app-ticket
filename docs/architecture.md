@@ -25,7 +25,10 @@ app/
 ├── Domain/                     Lógica de negocio, agrupada por dominio
 │   ├── Identity/               Usuarios, roles y permisos
 │   ├── Organization/           Departamentos, sedes y equipos de TI
-│   └── Shared/                 Piezas usadas por varios dominios (Icon, HasTranslatedLabel)
+│   ├── Catalog/                Categorías de atención
+│   ├── ServiceLevel/           Políticas de SLA, horarios laborales y festivos
+│   ├── Ticketing/              Prioridad y tipo de ticket (por ahora, solo enums)
+│   └── Shared/                 Piezas usadas por varios dominios (Icon, HasTranslatedLabel, HasSingleDefault)
 │       (cada dominio: Actions/ Enums/ Listeners/ Models/ …)
 ├── Http/
 │   ├── Controllers/Management/ Área de configuración (super admin)
@@ -38,9 +41,10 @@ routes/
 └── management.php              /management/* — cada recurso protegido por su permiso
 resources/js/
 ├── Components/ui/              Sistema de diseño (botones, campos, tarjetas, iconos…)
+├── Components/{Dominio}/       Piezas de negocio reutilizables (Ticketing/PriorityBadge)
 ├── Layouts/                    AppLayout (barra lateral + superior) y GuestLayout
 ├── Pages/{Area}/{Recurso}/     Index, Create, Edit y Partials/
-├── lib/                        Utilidades sin interfaz (classNames, formatRelative)
+├── lib/                        Utilidades sin interfaz (classNames, formatDuration, formSubmitOptions)
 └── types/                      Tipos que reflejan los Resources de Laravel
 ```
 
@@ -131,7 +135,73 @@ erDiagram
   }
 ```
 
+Catálogo y niveles de servicio:
+
+```mermaid
+erDiagram
+  teams ||--|{ categories : "atiende"
+  sla_policies |o--o{ categories : "define tiempos"
+  sla_policies ||--|{ sla_targets : "por prioridad"
+  business_calendars ||--o{ sla_policies : "usa horario"
+  business_calendars ||--|{ business_hours : "dias y horas"
+  business_calendars ||--o{ holidays : "festivos"
+
+  categories {
+    bigint id PK
+    bigint team_id FK "unico con name"
+    bigint sla_policy_id FK "null = politica predeterminada"
+    string name
+    string description
+    string icon
+    string default_ticket_type "incident, service_request"
+    boolean is_visible
+    smallint sort_order
+  }
+  sla_policies {
+    bigint id PK
+    bigint business_calendar_id FK
+    string name UK
+    string description
+    boolean is_default "solo una"
+  }
+  sla_targets {
+    bigint id PK
+    bigint sla_policy_id FK "unico con priority"
+    string priority "critical, high, medium, low"
+    int first_response_minutes
+    int resolution_minutes
+  }
+  business_calendars {
+    bigint id PK
+    string name UK
+    string timezone
+    boolean is_default "solo uno"
+  }
+  business_hours {
+    bigint id PK
+    bigint business_calendar_id FK
+    tinyint weekday "1 lunes a 7 domingo"
+    time opens_at
+    time closes_at
+  }
+  holidays {
+    bigint id PK
+    bigint business_calendar_id FK "unico con date"
+    string name
+    date date
+  }
+```
+
 Todas las tablas tienen `created_at` y `updated_at`.
+
+Reglas de negocio de esta parte:
+
+- Siempre hay exactamente un horario y una política predeterminados (`HasSingleDefault`).
+  Marcar uno nuevo desmarca el anterior; el actual no se puede desmarcar directamente.
+- Los minutos de SLA son minutos **laborales** del horario de la política.
+- La resolución nunca puede tomar menos tiempo que la primera respuesta.
+- Los nombres de categoría son únicos dentro de cada equipo, no en toda la plataforma.
+- `ServiceLevelSeeder` crea el horario y la política predeterminados en cualquier ambiente.
 
 ### Ajustes frente a la propuesta inicial
 
@@ -142,6 +212,5 @@ Todas las tablas tienen `created_at` y `updated_at`.
 
 ### Próximas tablas
 
-Catálogo y SLA (`categories`, `sla_policies`, `sla_targets`, `business_calendars`,
-`business_hours`, `holidays`), plantillas (`message_templates`), SSO
-(`identity_providers`, `directory_groups`, `directory_group_team`), tickets y auditoría.
+Plantillas (`message_templates`), SSO (`identity_providers`, `directory_groups`,
+`directory_group_team`), tickets y auditoría.

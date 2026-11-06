@@ -3,12 +3,13 @@ import ButtonLink from '@/Components/ui/ButtonLink';
 import Card from '@/Components/ui/Card';
 import Checkbox from '@/Components/ui/Checkbox';
 import FormField from '@/Components/ui/FormField';
-import Icon, { IconName } from '@/Components/ui/Icon';
+import { IconName } from '@/Components/ui/Icon';
+import IconPicker from '@/Components/ui/IconPicker';
 import InputError from '@/Components/ui/InputError';
 import PrimaryButton from '@/Components/ui/PrimaryButton';
+import RadioCards from '@/Components/ui/RadioCards';
 import TextArea from '@/Components/ui/TextArea';
 import TextInput from '@/Components/ui/TextInput';
-import { classNames } from '@/lib/classNames';
 import { DescribedOption, Option, TeamTypeValue, User } from '@/types';
 import { InertiaFormProps } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
@@ -121,71 +122,22 @@ export default function TeamForm({
                     </FormField>
                 </div>
 
-                <fieldset className="mt-5">
-                    <legend className="mb-2 text-sm font-extrabold">Tipo de equipo</legend>
-                    <div className="grid gap-3 md:grid-cols-2">
-                        {types.map((type) => (
-                            <label
-                                key={type.value}
-                                className={classNames(
-                                    'flex cursor-pointer flex-col gap-1 rounded-2xl border-[1.5px] p-4 transition has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
-                                    data.type === type.value
-                                        ? 'border-wine bg-wine text-white'
-                                        : 'border-field bg-white/85 hover:border-crimson',
-                                )}
-                            >
-                                <input
-                                    type="radio"
-                                    name="type"
-                                    value={type.value}
-                                    checked={data.type === type.value}
-                                    onChange={() => setData('type', type.value)}
-                                    className="sr-only"
-                                />
-                                <span className="font-extrabold">{type.label}</span>
-                                <span
-                                    className={classNames(
-                                        'text-sm font-semibold',
-                                        data.type === type.value ? 'text-blush' : 'text-muted',
-                                    )}
-                                >
-                                    {type.description}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                    <InputError message={errors.type} />
-                </fieldset>
-
-                <fieldset className="mt-5">
-                    <legend className="mb-2 text-sm font-extrabold">Icono</legend>
-                    <div className="flex flex-wrap gap-2">
-                        {icons.map((icon) => (
-                            <label
-                                key={icon.value}
-                                title={icon.label}
-                                className={classNames(
-                                    'grid size-12 cursor-pointer place-items-center rounded-[14px] border-[1.5px] transition has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
-                                    data.icon === icon.value
-                                        ? 'border-wine bg-wine text-white'
-                                        : 'border-field bg-white/85 text-crimson-dark hover:border-crimson',
-                                )}
-                            >
-                                <input
-                                    type="radio"
-                                    name="icon"
-                                    value={icon.value}
-                                    checked={data.icon === icon.value}
-                                    onChange={() => setData('icon', icon.value)}
-                                    className="sr-only"
-                                />
-                                <Icon name={icon.value} size={22} />
-                                <span className="sr-only">{icon.label}</span>
-                            </label>
-                        ))}
-                    </div>
-                    <InputError message={errors.icon} />
-                </fieldset>
+                <div className="mt-5 flex flex-col gap-5">
+                    <RadioCards
+                        name="type"
+                        legend="Tipo de equipo"
+                        options={types}
+                        value={data.type}
+                        onChange={(type) => setData('type', type)}
+                        error={errors.type}
+                    />
+                    <IconPicker
+                        icons={icons}
+                        value={data.icon}
+                        onChange={(icon) => setData('icon', icon)}
+                        error={errors.icon}
+                    />
+                </div>
             </Card>
 
             <Card aria-labelledby="members-heading">

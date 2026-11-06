@@ -48,6 +48,18 @@ export default function Dashboard({ stats }: { stats: ManagementStats | null }) 
             icon: 'users',
             href: route('management.teams.index'),
         },
+        {
+            label: 'Categorías',
+            description: 'Lo que las personas pueden solicitar y a qué equipo llega.',
+            icon: 'tag',
+            href: route('management.categories.index'),
+        },
+        {
+            label: 'SLA y horarios',
+            description: 'Tiempos de respuesta por prioridad y horario laboral.',
+            icon: 'clock',
+            href: route('management.service-levels.index'),
+        },
     ];
 
     return (

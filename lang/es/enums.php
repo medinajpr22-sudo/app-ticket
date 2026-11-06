@@ -45,6 +45,33 @@ return [
         'ApplicationSupport' => 'Equipos de aplicaciones: reciben la consulta sin pasar por la mesa general.',
     ],
 
+    'ticket_priority' => [
+        'Critical' => 'Crítica',
+        'High' => 'Alta',
+        'Medium' => 'Media',
+        'Low' => 'Baja',
+    ],
+
+    'ticket_type' => [
+        'Incident' => 'Incidente',
+        'ServiceRequest' => 'Solicitud',
+    ],
+
+    'ticket_type_description' => [
+        'Incident' => 'Algo dejó de funcionar y hay que restablecerlo.',
+        'ServiceRequest' => 'La persona necesita algo nuevo: un acceso, un equipo o un cambio.',
+    ],
+
+    'weekday' => [
+        'Monday' => 'Lunes',
+        'Tuesday' => 'Martes',
+        'Wednesday' => 'Miércoles',
+        'Thursday' => 'Jueves',
+        'Friday' => 'Viernes',
+        'Saturday' => 'Sábado',
+        'Sunday' => 'Domingo',
+    ],
+
     'icon' => [
         'Laptop' => 'Equipo',
         'Key' => 'Accesos',
