@@ -2,8 +2,16 @@
 
 namespace App\Providers;
 
+use App\Domain\Identity\Enums\PermissionSlug;
+use App\Domain\Identity\Listeners\RecordLastLogin;
+use App\Domain\Identity\Models\User;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,5 +29,28 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        JsonResource::withoutWrapping();
+
+        Password::defaults(fn (): Password => $this->app->isProduction()
+            ? Password::min(12)->letters()->mixedCase()->numbers()->uncompromised()
+            : Password::min(8));
+
+        $this->configureAuthorization();
+
+        Event::listen(Login::class, RecordLastLogin::class);
+    }
+
+    /**
+     * Every permission slug becomes a gate, so routes and policies can use
+     * `can:users.manage`. Super admins are always allowed.
+     */
+    private function configureAuthorization(): void
+    {
+        Gate::before(fn (User $user): ?bool => $user->isSuperAdmin() ? true : null);
+
+        foreach (PermissionSlug::cases() as $permission) {
+            Gate::define($permission->value, fn (User $user): bool => $user->hasPermission($permission));
+        }
     }
 }
