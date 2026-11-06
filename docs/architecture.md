@@ -13,6 +13,14 @@ El código está en inglés; la interfaz, en español (`lang/es`).
 
 El liderazgo no es un rol global: es `team_user.is_lead`, por equipo.
 
+Los permisos de `admin` y `user` se editan en **Roles y permisos**. Por seguridad:
+
+- `roles.manage` e `identity_providers.manage` están reservados al super admin
+  (`PermissionSlug::isReservedForSuperAdmin()`): no se pueden delegar y, aunque
+  aparecieran en la base de datos para otro rol, `User::hasPermission()` los ignora.
+- Si se delega la gestión de usuarios, solo un super admin puede asignar el rol
+  super admin o editar a un super admin (`UserPolicy`).
+
 Cada permiso (`App\Domain\Identity\Enums\PermissionSlug`) se registra como un *gate*
 (`can:users.manage`). El super admin pasa todos los gates (`Gate::before`).
 Los permisos por defecto de cada rol están en `PermissionSlug::defaultsFor()` y los
@@ -27,7 +35,7 @@ app/
 │   ├── Organization/           Departamentos, sedes y equipos de TI
 │   ├── Catalog/                Categorías de atención
 │   ├── ServiceLevel/           Políticas de SLA, horarios laborales y festivos
-│   ├── Ticketing/              Prioridad y tipo de ticket (por ahora, solo enums)
+│   ├── Ticketing/              Plantillas de mensajes, variables, prioridad y tipo de ticket
 │   └── Shared/                 Piezas usadas por varios dominios (Icon, HasTranslatedLabel, HasSingleDefault)
 │       (cada dominio: Actions/ Enums/ Listeners/ Models/ …)
 ├── Http/
@@ -203,6 +211,29 @@ Reglas de negocio de esta parte:
 - Los nombres de categoría son únicos dentro de cada equipo, no en toda la plataforma.
 - `ServiceLevelSeeder` crea el horario y la política predeterminados en cualquier ambiente.
 
+Plantillas de mensajes:
+
+```mermaid
+erDiagram
+  teams |o--o{ message_templates : "personaliza"
+  users |o--o{ message_templates : "redacta"
+
+  message_templates {
+    bigint id PK
+    bigint team_id FK "null = todos los equipos"
+    bigint author_id FK "null = creada por el sistema"
+    string purpose "greeting, acknowledgement, auto_close, canned_response"
+    string name
+    text body "con {{variables}}"
+    boolean is_active
+  }
+```
+
+- Los mensajes automáticos (`greeting`, `acknowledgement`, `auto_close`) admiten una plantilla
+  activa general y una más por equipo; la del equipo reemplaza a la general.
+- Las variables válidas están en `TemplateVariable`. `{{agent.name}}` no se permite en el acuse
+  de recibo porque todavía no hay agente. `MessageTemplateSeeder` crea las tres generales.
+
 ### Ajustes frente a la propuesta inicial
 
 - `roles` y `permissions` solo guardan el `slug`: el nombre y la descripción salen de las
@@ -212,5 +243,4 @@ Reglas de negocio de esta parte:
 
 ### Próximas tablas
 
-Plantillas (`message_templates`), SSO (`identity_providers`, `directory_groups`,
-`directory_group_team`), tickets y auditoría.
+SSO (`identity_providers`, `directory_groups`, `directory_group_team`), tickets y auditoría.

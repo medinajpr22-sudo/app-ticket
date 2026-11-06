@@ -21,6 +21,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -87,6 +88,8 @@ class UserController extends Controller
      */
     public function edit(User $user): Response
     {
+        Gate::authorize('update', $user);
+
         return Inertia::render('Management/Users/Edit', [
             'user' => UserResource::make($user->load(['role', 'department', 'location', 'teams'])),
             ...$this->formOptions(),

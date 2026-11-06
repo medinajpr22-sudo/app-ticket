@@ -140,6 +140,7 @@ export default function UserForm({
                             <Checkbox
                                 checked={data.is_active}
                                 aria-describedby="is_active-hint"
+                                aria-invalid={errors.is_active ? true : undefined}
                                 onChange={(e) => setData('is_active', e.target.checked)}
                             />
                             Cuenta activa

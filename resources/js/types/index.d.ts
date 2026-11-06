@@ -131,6 +131,38 @@ export interface Category {
     sla_policy?: SlaPolicy | null;
 }
 
+export type MessageTemplatePurposeValue =
+    | 'greeting'
+    | 'acknowledgement'
+    | 'auto_close'
+    | 'canned_response';
+
+export interface MessageTemplatePurposeOption
+    extends DescribedOption<MessageTemplatePurposeValue> {
+    is_automatic: boolean;
+}
+
+export interface TemplateVariableOption {
+    name: string;
+    token: string;
+    label: string;
+    sample: string;
+    purposes: MessageTemplatePurposeValue[];
+}
+
+export interface MessageTemplate {
+    id: number;
+    team_id: number | null;
+    purpose: Option<MessageTemplatePurposeValue>;
+    is_automatic: boolean;
+    name: string;
+    body: string;
+    is_active: boolean;
+    team?: Team | null;
+    author_name?: string | null;
+    updated_at: string | null;
+}
+
 export interface PaginationLink {
     url: string | null;
     label: string;

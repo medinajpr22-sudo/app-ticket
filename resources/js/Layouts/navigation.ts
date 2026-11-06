@@ -60,6 +60,20 @@ export const navigation: NavigationSection[] = [
                 icon: 'clock',
                 permission: 'sla_policies.manage',
             },
+            {
+                label: 'Plantillas',
+                routeName: 'management.message-templates.index',
+                activePattern: 'management.message-templates.*',
+                icon: 'mail',
+                permission: 'message_templates.manage',
+            },
+            {
+                label: 'Roles y permisos',
+                routeName: 'management.roles.index',
+                activePattern: 'management.roles.*',
+                icon: 'shield',
+                permission: 'roles.manage',
+            },
         ],
     },
 ];

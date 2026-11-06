@@ -143,10 +143,18 @@ class User extends Authenticatable
         return $this->role->slug->isStaff();
     }
 
+    /**
+     * Reserved permissions only ever apply to super admins, even if a row
+     * granting them to another role ends up in the database.
+     */
     public function hasPermission(PermissionSlug $permission): bool
     {
-        return $this->isSuperAdmin()
-            || $this->role->permissions->contains(fn (Permission $granted): bool => $granted->slug === $permission);
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return ! $permission->isReservedForSuperAdmin()
+            && $this->role->permissions->contains(fn (Permission $granted): bool => $granted->slug === $permission);
     }
 
     /**
@@ -156,11 +164,9 @@ class User extends Authenticatable
      */
     public function permissionSlugs(): array
     {
-        $permissions = $this->isSuperAdmin()
-            ? PermissionSlug::cases()
-            : $this->role->permissions->pluck('slug')->all();
+        $permissions = array_filter(PermissionSlug::cases(), $this->hasPermission(...));
 
-        return array_map(fn (PermissionSlug $permission): string => $permission->value, $permissions);
+        return array_values(array_map(fn (PermissionSlug $permission): string => $permission->value, $permissions));
     }
 
     /**

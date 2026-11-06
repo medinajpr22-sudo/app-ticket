@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Http\Controllers\Management;
 
+use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Enums\RoleSlug;
+use App\Domain\Identity\Models\Permission;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
@@ -135,6 +137,45 @@ class UserControllerTest extends TestCase
 
         $this->assertTrue($superAdmin->refresh()->isSuperAdmin());
         $this->assertTrue($superAdmin->is_active);
+    }
+
+    public function test_delegated_user_manager_cannot_assign_the_super_admin_role(): void
+    {
+        $this->actingAs($this->delegatedUserManager())
+            ->post(route('management.users.store'), $this->payload([
+                'role_id' => Role::findBySlug(RoleSlug::SuperAdmin)->id,
+            ]))
+            ->assertSessionHasErrors(['role_id' => 'Solo un super administrador puede asignar este rol.']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'ana.torres@example.com']);
+    }
+
+    public function test_delegated_user_manager_cannot_edit_a_super_admin(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create();
+        $manager = $this->delegatedUserManager();
+
+        $this->actingAs($manager)
+            ->get(route('management.users.edit', $superAdmin))
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->put(route('management.users.update', $superAdmin), $this->payload())
+            ->assertForbidden();
+
+        $this->assertTrue($superAdmin->refresh()->isSuperAdmin());
+    }
+
+    /**
+     * An admin whose role was given the user management permission.
+     */
+    private function delegatedUserManager(): User
+    {
+        Role::findBySlug(RoleSlug::Admin)->permissions()->attach(
+            Permission::query()->where('slug', PermissionSlug::ManageUsers)->firstOrFail(),
+        );
+
+        return User::factory()->admin()->create();
     }
 
     /**

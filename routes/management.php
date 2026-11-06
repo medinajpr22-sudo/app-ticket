@@ -3,6 +3,8 @@
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Http\Controllers\Management\BusinessCalendarController;
 use App\Http\Controllers\Management\CategoryController;
+use App\Http\Controllers\Management\MessageTemplateController;
+use App\Http\Controllers\Management\RolePermissionController;
 use App\Http\Controllers\Management\ServiceLevelController;
 use App\Http\Controllers\Management\SlaPolicyController;
 use App\Http\Controllers\Management\TeamController;
@@ -31,6 +33,16 @@ Route::middleware('auth')->prefix('management')->name('management.')->group(func
     Route::resource('categories', CategoryController::class)
         ->except(['show', 'destroy'])
         ->middleware('can:'.PermissionSlug::ManageCategories->value);
+
+    Route::resource('message-templates', MessageTemplateController::class)
+        ->except(['show', 'destroy'])
+        ->parameters(['message-templates' => 'messageTemplate'])
+        ->middleware('can:'.PermissionSlug::ManageMessageTemplates->value);
+
+    Route::middleware('can:'.PermissionSlug::ManageRoles->value)->group(function () {
+        Route::get('roles', [RolePermissionController::class, 'index'])->name('roles.index');
+        Route::put('roles', [RolePermissionController::class, 'update'])->name('roles.update');
+    });
 
     Route::middleware('can:'.PermissionSlug::ManageSlaPolicies->value)
         ->prefix('service-levels')

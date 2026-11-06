@@ -27,6 +27,24 @@ enum PermissionSlug: string
     case ManageIdentityProviders = 'identity_providers.manage';
     case ViewAuditLogs = 'audit_logs.view';
 
+    public function group(): PermissionGroup
+    {
+        return match (true) {
+            str_starts_with($this->value, 'tickets.') => PermissionGroup::Tickets,
+            $this === self::ViewReports => PermissionGroup::Reports,
+            default => PermissionGroup::Management,
+        };
+    }
+
+    /**
+     * Permissions that would let someone grant themselves more access.
+     * They can never be delegated to roles other than the super admin.
+     */
+    public function isReservedForSuperAdmin(): bool
+    {
+        return in_array($this, [self::ManageRoles, self::ManageIdentityProviders], true);
+    }
+
     /**
      * Permissions each role receives when the application is installed.
      *

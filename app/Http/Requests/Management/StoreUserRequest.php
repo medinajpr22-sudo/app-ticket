@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Management;
 
+use App\Domain\Identity\Enums\RoleSlug;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Department;
@@ -46,11 +47,17 @@ class StoreUserRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if ($validator->errors()->has('role_id') || $this->input('team_ids', []) === []) {
+                if ($validator->errors()->has('role_id')) {
                     return;
                 }
 
-                if (! Role::query()->findOrFail($this->integer('role_id'))->slug->isStaff()) {
+                $role = Role::query()->findOrFail($this->integer('role_id'));
+
+                if ($role->slug === RoleSlug::SuperAdmin && ! $this->user()->isSuperAdmin()) {
+                    $validator->errors()->add('role_id', __('Only a super admin can assign this role.'));
+                }
+
+                if ($this->input('team_ids', []) !== [] && ! $role->slug->isStaff()) {
                     $validator->errors()->add('team_ids', __('Only IT staff can belong to a team.'));
                 }
             },

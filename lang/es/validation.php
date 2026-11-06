@@ -210,6 +210,9 @@ return [
         'hours.*.closes_at' => 'hora de cierre',
         'holidays.*.name' => 'nombre del festivo',
         'holidays.*.date' => 'fecha del festivo',
+        'purpose' => 'uso',
+        'body' => 'mensaje',
+        'permissions' => 'permisos',
     ],
 
 ];

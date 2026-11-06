@@ -11,8 +11,10 @@ use App\Domain\Organization\Models\Team;
 use App\Domain\ServiceLevel\Models\BusinessCalendar;
 use App\Domain\ServiceLevel\Models\SlaPolicy;
 use App\Domain\Shared\Enums\Icon;
+use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
 use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketType;
+use App\Domain\Ticketing\Models\MessageTemplate;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -49,6 +51,7 @@ class DemoSeeder extends Seeder
         ])]);
 
         $this->seedCatalog($teams);
+        $this->seedMessageTemplates($teams);
 
         $staff = [
             ['Ana Torres', 'ana.torres', 'Analista de soporte', ['Infraestructura y Hardware' => false]],
@@ -162,5 +165,32 @@ class DemoSeeder extends Seeder
                 'sort_order' => $position,
             ]);
         }
+    }
+
+    /**
+     * Canned responses from the prototype and a greeting of its own for a clinical team.
+     *
+     * @param  Collection<string, Team>  $teams
+     */
+    private function seedMessageTemplates(Collection $teams): void
+    {
+        foreach ([
+            ['Estamos revisando', 'Hola {{requester.first_name}}, estamos revisando tu caso.'],
+            ['Pedir captura del error', '¿Podrías compartir una captura del error que aparece?'],
+            ['Confirmar solución', 'Aplicamos una solución. ¿Puedes confirmar si ya funciona?'],
+        ] as [$name, $body]) {
+            MessageTemplate::query()->create([
+                'purpose' => MessageTemplatePurpose::CannedResponse,
+                'name' => $name,
+                'body' => $body,
+            ]);
+        }
+
+        MessageTemplate::query()->create([
+            'team_id' => $teams['Dialisoft']->id,
+            'purpose' => MessageTemplatePurpose::Greeting,
+            'name' => 'Saludo de Dialisoft',
+            'body' => '{{greeting}} {{requester.first_name}}, soy {{agent.name}} del equipo de Dialisoft. Ya tomé tu caso #{{ticket.number}}. Si hay pacientes afectados, llámanos a la extensión 1010.',
+        ]);
     }
 }

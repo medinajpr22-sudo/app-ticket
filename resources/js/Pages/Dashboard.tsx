@@ -60,6 +60,18 @@ export default function Dashboard({ stats }: { stats: ManagementStats | null }) 
             icon: 'clock',
             href: route('management.service-levels.index'),
         },
+        {
+            label: 'Plantillas',
+            description: 'Saludo automático, acuse de recibo y respuestas rápidas.',
+            icon: 'mail',
+            href: route('management.message-templates.index'),
+        },
+        {
+            label: 'Roles y permisos',
+            description: 'Qué puede hacer cada rol dentro de la plataforma.',
+            icon: 'shield',
+            href: route('management.roles.index'),
+        },
     ];
 
     return (

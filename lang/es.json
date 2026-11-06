@@ -19,5 +19,16 @@
     "There must always be a default calendar. Mark another one as default instead.": "Siempre debe haber un horario predeterminado. Marca otro como predeterminado en su lugar.",
     "The closing time must be later than the opening time.": "La hora de cierre debe ser posterior a la de apertura.",
     "This date is already in the list.": "Esta fecha ya está en la lista.",
-    "Choose at least one working day.": "Elige al menos un día laborable."
+    "Choose at least one working day.": "Elige al menos un día laborable.",
+    "Message template created.": "Plantilla creada.",
+    "Message template updated.": "Cambios guardados.",
+    "The variable :variable does not exist.": "La variable :variable no existe.",
+    "The variable :variable cannot be used in this kind of message.": "La variable :variable no está disponible en este tipo de mensaje.",
+    "There is already a template with that name for the same teams.": "Ya hay una plantilla con ese nombre para los mismos equipos.",
+    "Another active template of this kind already applies to :scope. Disable it first.": "Ya hay otra plantilla activa de este tipo para :scope. Desactívala primero.",
+    "the :team team": "el equipo :team",
+    "all teams": "todos los equipos",
+    "Permissions updated.": "Permisos actualizados.",
+    "Only the super admin can have these permissions: :permissions.": "Solo el super administrador puede tener estos permisos: :permissions.",
+    "Only a super admin can assign this role.": "Solo un super administrador puede asignar este rol."
 }

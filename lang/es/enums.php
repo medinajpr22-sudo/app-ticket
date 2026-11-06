@@ -35,6 +35,12 @@ return [
         'ViewAuditLogs' => 'Ver la auditoría',
     ],
 
+    'permission_group' => [
+        'Tickets' => 'Tickets',
+        'Reports' => 'Reportes',
+        'Management' => 'Administración de la plataforma',
+    ],
+
     'team_type' => [
         'GeneralSupport' => 'Soporte general',
         'ApplicationSupport' => 'Consulta directa',
@@ -60,6 +66,42 @@ return [
     'ticket_type_description' => [
         'Incident' => 'Algo dejó de funcionar y hay que restablecerlo.',
         'ServiceRequest' => 'La persona necesita algo nuevo: un acceso, un equipo o un cambio.',
+    ],
+
+    'message_template_purpose' => [
+        'Greeting' => 'Saludo al tomar el ticket',
+        'Acknowledgement' => 'Acuse de recibo',
+        'AutoClose' => 'Cierre por falta de respuesta',
+        'CannedResponse' => 'Respuesta rápida',
+    ],
+
+    'message_template_purpose_description' => [
+        'Greeting' => 'Se envía al solicitante cuando un agente toma su ticket.',
+        'Acknowledgement' => 'Se envía apenas se crea el ticket, antes de que alguien lo tome.',
+        'AutoClose' => 'Se envía al cerrar un ticket que esperaba respuesta y no la recibió.',
+        'CannedResponse' => 'El agente la elige al responder; puede editarla antes de enviar.',
+    ],
+
+    'template_variable' => [
+        'Greeting' => 'Saludo según la hora',
+        'RequesterFirstName' => 'Nombre del solicitante',
+        'RequesterName' => 'Nombre completo del solicitante',
+        'AgentName' => 'Nombre del agente',
+        'TeamName' => 'Equipo que atiende',
+        'CategoryName' => 'Categoría del ticket',
+        'TicketNumber' => 'Número del ticket',
+        'TicketSubject' => 'Asunto del ticket',
+    ],
+
+    'template_variable_sample' => [
+        'Greeting' => 'Buenos días',
+        'RequesterFirstName' => 'Carolina',
+        'RequesterName' => 'Carolina Méndez',
+        'AgentName' => 'Ana Torres',
+        'TeamName' => 'Infraestructura y Hardware',
+        'CategoryName' => 'Accesos y claves',
+        'TicketNumber' => '1044',
+        'TicketSubject' => 'Nuevo ingreso: crear usuario y correo',
     ],
 
     'weekday' => [
