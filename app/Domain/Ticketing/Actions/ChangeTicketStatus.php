@@ -5,6 +5,7 @@ namespace App\Domain\Ticketing\Actions;
 use App\Domain\Identity\Models\User;
 use App\Domain\ServiceLevel\Services\BusinessTimeCalculator;
 use App\Domain\Ticketing\Enums\TicketStatus;
+use App\Domain\Ticketing\Events\TicketStatusChanged;
 use App\Domain\Ticketing\Models\Ticket;
 use Illuminate\Support\Facades\DB;
 
@@ -41,13 +42,17 @@ class ChangeTicketStatus
                 $ticket->resolved_at = now();
             }
 
-            if (in_array($status, [TicketStatus::Closed, TicketStatus::Cancelled], true)) {
+            if ($status === TicketStatus::Closed) {
+                $ticket->resolved_at ??= now();
                 $ticket->closed_at = now();
+                $ticket->closed_by_id = $actor?->id;
             }
 
             if ($status->isOpen()) {
                 $ticket->resolved_at = null;
                 $ticket->closed_at = null;
+                $ticket->closed_by_id = null;
+                $ticket->requester_archived_at = null;
             }
 
             $ticket->save();
@@ -57,6 +62,8 @@ class ChangeTicketStatus
                 'from_status' => $previous,
                 'to_status' => $status,
             ]);
+
+            TicketStatusChanged::dispatch($ticket, $previous, $status, $actor);
 
             return $ticket;
         });

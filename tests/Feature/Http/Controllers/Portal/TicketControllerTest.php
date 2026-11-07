@@ -45,7 +45,7 @@ class TicketControllerTest extends TestCase
 
         $this->assertTrue($ticket->requester()->is($requester));
         $this->assertSame($category->team_id, $ticket->team_id);
-        $this->assertSame(TicketStatus::New, $ticket->status);
+        $this->assertSame(TicketStatus::Received, $ticket->status);
         $this->assertSame('2026-11-09 13:00', $ticket->first_response_due_at->setTimezone('America/Bogota')->format('Y-m-d H:i'));
         $this->assertSame('2026-11-11 11:00', $ticket->resolution_due_at->setTimezone('America/Bogota')->format('Y-m-d H:i'));
         $this->assertSame('No puedo conectarme a la VPN desde casa.', $ticket->messages()->oldest('id')->value('body'));

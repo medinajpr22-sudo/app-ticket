@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Desk;
 
-use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
+use App\Domain\Ticketing\Actions\MarkTicketNotificationsAsRead;
 use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
 use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketStatus;
@@ -15,7 +15,6 @@ use App\Domain\Ticketing\Services\MessageTemplateRenderer;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TicketResource;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -25,7 +24,8 @@ use Inertia\Response;
 class TicketController extends Controller
 {
     /**
-     * The team inbox, most urgent first.
+     * The team inbox: only the tickets of the person's teams, the ones that
+     * run out of time first at the top.
      */
     public function index(Request $request): Response
     {
@@ -34,8 +34,8 @@ class TicketController extends Controller
         /** @var array{view?: string|null, status?: string|null, team?: int|string|null, search?: string|null} $filters */
         $filters = $request->validate([
             'view' => ['nullable', Rule::in(['mine', 'unassigned'])],
-            'status' => ['nullable', Rule::in(['all', ...array_map(fn (TicketStatus $status): string => $status->value, TicketStatus::cases())])],
-            'team' => ['nullable', 'integer', Rule::exists(Team::class, 'id')],
+            'status' => ['nullable', Rule::in(['open', 'all', ...array_map(fn (TicketStatus $status): string => $status->value, TicketStatus::current())])],
+            'team' => ['nullable', 'integer', Rule::in($user->teams->modelKeys())],
             'search' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -54,8 +54,7 @@ class TicketController extends Controller
                     ->when(ctype_digit(ltrim($search, '#')), fn (Builder $query) => $query->orWhere('id', (int) ltrim($search, '#'))),
             ))
             ->with(['requester', 'assignee', 'team', 'category', 'businessCalendar.hours', 'businessCalendar.holidays'])
-            ->orderBy('resolution_due_at')
-            ->orderBy('id')
+            ->orderByUrgency()
             ->paginate(20)
             ->withQueryString();
 
@@ -71,17 +70,23 @@ class TicketController extends Controller
                 'mine' => $this->visibleTo($user)->open()->whereBelongsTo($user, 'assignee')->count(),
                 'unassigned' => $this->visibleTo($user)->open()->whereNull('assignee_id')->count(),
             ],
-            'teams' => $this->teamsFor($user)->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])->all(),
-            'statuses' => TicketStatus::options(),
+            'teams' => $user->teams()->orderBy('name')->get()->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])->all(),
+            'statuses' => TicketStatus::options(TicketStatus::current()),
         ]);
     }
 
     /**
      * A ticket as IT sees it: the whole conversation, internal notes included.
      */
-    public function show(Request $request, Ticket $ticket, MessageTemplateRenderer $renderer): Response
-    {
+    public function show(
+        Request $request,
+        Ticket $ticket,
+        MessageTemplateRenderer $renderer,
+        MarkTicketNotificationsAsRead $markNotificationsAsRead,
+    ): Response {
         Gate::authorize('viewInDesk', $ticket);
+
+        $markNotificationsAsRead->handle($request->user(), $ticket);
 
         $ticket->load([
             'requester.department',
@@ -92,6 +97,7 @@ class TicketController extends Controller
             'businessCalendar.hours',
             'businessCalendar.holidays',
             'rating',
+            'closedBy',
             'messages' => fn ($query) => $query->with(['author', 'attachments'])->oldest()->orderBy('id'),
         ]);
 
@@ -123,7 +129,6 @@ class TicketController extends Controller
             'can' => [
                 'take' => Gate::allows('take', $ticket),
                 'respond' => Gate::allows('respond', $ticket),
-                'addInternalNote' => Gate::allows('addInternalNote', $ticket),
                 'changeStatus' => Gate::allows('changeStatus', $ticket),
                 'changePriority' => Gate::allows('changePriority', $ticket),
                 'assign' => Gate::allows('assign', $ticket),
@@ -133,27 +138,13 @@ class TicketController extends Controller
     }
 
     /**
-     * Tickets of the person's teams, or every ticket for those who may see them all.
+     * The inbox is where people work, so it holds the tickets of their own
+     * teams only. Seeing every ticket is what the statistics are for.
      *
      * @return Builder<Ticket>
      */
     private function visibleTo(User $user): Builder
     {
-        return Ticket::query()->when(
-            ! $user->can(PermissionSlug::ViewAllTickets->value),
-            fn (Builder $query) => $query->ofTeamsOf($user),
-        );
-    }
-
-    /**
-     * Teams the person can filter the inbox by.
-     *
-     * @return Collection<int, Team>
-     */
-    private function teamsFor(User $user): Collection
-    {
-        return $user->can(PermissionSlug::ViewAllTickets->value)
-            ? Team::query()->orderBy('name')->get()
-            : $user->teams()->orderBy('name')->get();
+        return Ticket::query()->ofTeamsOf($user);
     }
 }

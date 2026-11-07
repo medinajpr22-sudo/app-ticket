@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -131,6 +132,27 @@ class User extends Authenticatable
     public function belongsToTeam(int $teamId): bool
     {
         return $this->teams->contains('id', $teamId);
+    }
+
+    /**
+     * Whether the user is a lead of that team, not only a member.
+     */
+    public function leadsTeam(int $teamId): bool
+    {
+        return $this->teams->contains(fn (Team $team): bool => $team->id === $teamId && (bool) $team->pivot->getAttribute('is_lead'));
+    }
+
+    /**
+     * The teams the user leads, by name.
+     *
+     * @return Collection<int, Team>
+     */
+    public function ledTeams(): Collection
+    {
+        return $this->teams
+            ->filter(fn (Team $team): bool => (bool) $team->pivot->getAttribute('is_lead'))
+            ->sortBy('name')
+            ->values();
     }
 
     public function hasRole(RoleSlug $role): bool

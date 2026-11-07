@@ -35,6 +35,7 @@ class TicketMessageResource extends JsonResource
                     'name' => $attachment->original_name,
                     'size_bytes' => $attachment->size_bytes,
                     'url' => route('attachments.show', $attachment),
+                    'preview_url' => $attachment->isPreviewableImage() ? route('attachments.preview', $attachment) : null,
                 ])
                 ->all()),
         ];

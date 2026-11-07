@@ -10,12 +10,13 @@ import { formatRelative } from '@/lib/formatDate';
 import { Paginated, Ticket } from '@/types';
 import { Link, router } from '@inertiajs/react';
 
-type StatusFilter = '' | 'open' | 'finished';
+type StatusFilter = '' | 'open' | 'finished' | 'archived';
 
 const statusFilters: Array<{ value: StatusFilter; label: string }> = [
     { value: '', label: 'Todos' },
     { value: 'open', label: 'Abiertos' },
     { value: 'finished', label: 'Finalizados' },
+    { value: 'archived', label: 'Archivados' },
 ];
 
 export default function Index({ tickets, filters }: { tickets: Paginated<Ticket>; filters: { status: StatusFilter } }) {
@@ -83,7 +84,7 @@ export default function Index({ tickets, filters }: { tickets: Paginated<Ticket>
                 ) : (
                     <EmptyState
                         icon="ticket"
-                        title={filters.status ? 'No hay tickets con este filtro' : 'Todavía no tienes tickets'}
+                        title={filters.status === 'archived' ? 'No tienes tickets archivados' : filters.status ? 'No hay tickets con este filtro' : 'Todavía no tienes tickets'}
                         description="Cuando necesites ayuda de TI, crea un ticket y te avisaremos de cada avance."
                         action={<ButtonLink href={route('portal.tickets.create')}>Crear un ticket</ButtonLink>}
                     />

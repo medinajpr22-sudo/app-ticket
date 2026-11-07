@@ -31,6 +31,20 @@ class TicketAttachment extends Model
     public const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'];
 
     /**
+     * Pictures browsers can show safely inside the page. SVG is left out on
+     * purpose: it can carry scripts.
+     */
+    public const PREVIEWABLE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    /**
+     * Whether the file can be shown as a picture instead of only downloaded.
+     */
+    public function isPreviewableImage(): bool
+    {
+        return in_array($this->mime_type, self::PREVIEWABLE_MIME_TYPES, true);
+    }
+
+    /**
      * File limits for forms, so they can warn before uploading.
      *
      * @return array{max_files: int, max_kilobytes: int, extensions: list<string>}

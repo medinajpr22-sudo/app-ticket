@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
 use App\Domain\Ticketing\Enums\TicketMessageType;
 use App\Domain\Ticketing\Enums\TicketStatus;
+use App\Domain\Ticketing\Events\TicketTransferred;
 use App\Domain\Ticketing\Models\Ticket;
 use Illuminate\Support\Facades\DB;
 
@@ -27,7 +28,7 @@ class TransferTicket
             $ticket->assignee()->dissociate();
             $ticket->save();
 
-            $this->changeStatus->handle($ticket, TicketStatus::New, $actor);
+            $this->changeStatus->handle($ticket, TicketStatus::Received, $actor);
 
             $ticket->assignments()->create([
                 'team_id' => $team->id,
@@ -47,6 +48,8 @@ class TransferTicket
                 'type' => TicketMessageType::Automated,
                 'body' => __('Your request was transferred to the :team team, who will continue with it.', ['team' => $team->name]),
             ]);
+
+            TicketTransferred::dispatch($ticket, $previousTeam, $team, $actor);
 
             return $ticket;
         });

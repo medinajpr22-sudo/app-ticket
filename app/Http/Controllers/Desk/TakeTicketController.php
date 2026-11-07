@@ -12,13 +12,18 @@ use Illuminate\Support\Facades\Gate;
 class TakeTicketController extends Controller
 {
     /**
-     * The agent takes the ticket; the requester gets the team's greeting.
+     * The agent confirms taking the ticket, from nobody or from the colleague
+     * they saw on the screen. Only then can they write in it.
      */
     public function __invoke(Request $request, Ticket $ticket, TakeTicket $takeTicket): RedirectResponse
     {
         Gate::authorize('take', $ticket);
 
-        $takeTicket->handle($ticket, $request->user());
+        $validated = $request->validate([
+            'assignee_id' => ['nullable', 'integer'],
+        ]);
+
+        $takeTicket->handle($ticket, $request->user(), $validated['assignee_id'] ?? null);
 
         return to_route('desk.tickets.show', $ticket)->with('success', __('Ticket taken.'));
     }

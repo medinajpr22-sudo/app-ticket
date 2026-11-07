@@ -4,6 +4,7 @@ namespace App\Domain\Ticketing\Listeners;
 
 use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
 use App\Domain\Ticketing\Enums\TicketMessageType;
+use App\Domain\Ticketing\Events\TicketMessagePosted;
 use App\Domain\Ticketing\Events\TicketTaken;
 use App\Domain\Ticketing\Models\MessageTemplate;
 use App\Domain\Ticketing\Services\MessageTemplateRenderer;
@@ -25,12 +26,14 @@ class SendGreetingMessage
             return;
         }
 
-        $ticket->messages()->create([
+        $message = $ticket->messages()->create([
             'author_id' => $event->agent->id,
             'type' => TicketMessageType::Reply,
             'body' => $this->renderer->render($template->body, $ticket, $event->agent),
         ]);
 
         $ticket->recordFirstResponse();
+
+        TicketMessagePosted::dispatch($message);
     }
 }

@@ -144,7 +144,7 @@ class DemoSeeder extends Seeder
         $sap = $open('jorge.pena', 'Accesos y roles en SAP', 'Solicitud de rol de compras en SAP', 'Necesito el rol de compras para aprobar pedidos.', TicketPriority::Medium);
         $marco = $people['marco.diaz@example.com'];
         $takeTicket->handle($sap, $marco);
-        $reply->handle($sap, $marco, 'Falta la aprobación del jefe de Jorge. Ya le escribí.', isInternalNote: true);
+        $reply->handle($sap, $marco, 'Ya le pedí la aprobación a tu jefe. Apenas responda te asigno el rol.');
 
         $monitor = $open('carolina.mendez', 'Equipo y hardware', 'Monitor secundario parpadea', 'Parpadea cada pocos minutos.', TicketPriority::Low);
         $ana = $people['ana.torres@example.com'];

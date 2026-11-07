@@ -18,13 +18,14 @@ trait HasTranslatedLabel
     }
 
     /**
+     * @param  list<self>|null  $cases  Only these cases; every case when null.
      * @return list<array{value: string, label: string}>
      */
-    public static function options(): array
+    public static function options(?array $cases = null): array
     {
         return array_map(
             fn (self $case): array => ['value' => $case->value, 'label' => $case->label()],
-            self::cases(),
+            $cases ?? self::cases(),
         );
     }
 }

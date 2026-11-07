@@ -72,17 +72,65 @@ class TakeTicketControllerTest extends TestCase
         $this->assertSame('Hola Carolina, Redes ya tiene tu caso.', $ticket->messages()->sole()->body);
     }
 
-    public function test_a_ticket_someone_already_took_cannot_be_taken_again(): void
+    public function test_a_ticket_taken_in_the_meantime_is_not_taken_from_the_colleague(): void
     {
-        $colleague = User::factory()->admin()->create();
+        $colleague = User::factory()->admin()->create(['name' => 'Luis Pardo']);
         $colleague->teams()->attach($this->team);
         $ticket = $this->newTicket(['assignee_id' => $colleague->id, 'status' => TicketStatus::InProgress]);
 
         $this->actingAs($this->agent)
-            ->post(route('desk.tickets.take', $ticket))
-            ->assertForbidden();
+            ->from(route('desk.tickets.show', $ticket))
+            ->post(route('desk.tickets.take', $ticket), ['assignee_id' => null])
+            ->assertSessionHasErrors(['ticket' => 'Luis Pardo ya tomó este ticket.']);
 
         $this->assertTrue($ticket->refresh()->assignee()->is($colleague));
+        $this->assertDatabaseCount('ticket_assignments', 0);
+    }
+
+    public function test_an_agent_can_take_a_ticket_from_the_colleague_they_saw(): void
+    {
+        $colleague = User::factory()->admin()->create(['name' => 'Luis Pardo']);
+        $colleague->teams()->attach($this->team);
+        $ticket = $this->newTicket([
+            'assignee_id' => $colleague->id,
+            'status' => TicketStatus::InProgress,
+            'first_responded_at' => now(),
+        ]);
+
+        $this->actingAs($this->agent)
+            ->post(route('desk.tickets.take', $ticket), ['assignee_id' => $colleague->id])
+            ->assertRedirect(route('desk.tickets.show', $ticket));
+
+        $ticket->refresh();
+        $note = $ticket->messages()->sole();
+
+        $this->assertTrue($ticket->assignee()->is($this->agent));
+        $this->assertSame(TicketStatus::InProgress, $ticket->status);
+        $this->assertDatabaseHas('ticket_assignments', [
+            'ticket_id' => $ticket->id,
+            'assignee_id' => $this->agent->id,
+            'user_id' => $this->agent->id,
+        ]);
+        $this->assertSame(TicketMessageType::InternalNote, $note->type);
+        $this->assertSame('Ana Torres tomó el ticket de Luis Pardo.', $note->body);
+    }
+
+    public function test_the_agent_who_has_the_ticket_cannot_take_it_again(): void
+    {
+        $ticket = $this->newTicket(['assignee_id' => $this->agent->id, 'status' => TicketStatus::InProgress]);
+
+        $this->actingAs($this->agent)
+            ->post(route('desk.tickets.take', $ticket), ['assignee_id' => $this->agent->id])
+            ->assertForbidden();
+    }
+
+    public function test_a_closed_ticket_cannot_be_taken(): void
+    {
+        $ticket = $this->newTicket(['status' => TicketStatus::Closed, 'closed_at' => now()]);
+
+        $this->actingAs($this->agent)
+            ->post(route('desk.tickets.take', $ticket))
+            ->assertForbidden();
     }
 
     public function test_an_agent_of_another_team_cannot_take_the_ticket(): void

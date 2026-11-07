@@ -8,10 +8,12 @@ El código está en inglés; la interfaz, en español (`lang/es`).
 | Rol (`slug`)  | Quién es                 | Qué hace                                                         |
 | ------------- | ------------------------ | ---------------------------------------------------------------- |
 | `user`        | Colaborador              | Crea tickets y sigue los suyos.                                  |
-| `admin`       | Personal de TI           | Atiende los tickets de los equipos a los que pertenece.          |
+| `admin`       | Personal de TI           | Atiende los tickets de sus equipos. Si lidera uno, agrega auxiliares y sigue su rendimiento. |
 | `super_admin` | Dirección TIC            | Todo lo anterior y configura la plataforma.                      |
 
-El liderazgo no es un rol global: es `team_user.is_lead`, por equipo.
+El liderazgo no es un rol global: es `team_user.is_lead`, por equipo. Un **líder** es un `admin`
+con `is_lead` en ese equipo y el permiso `teams.lead`; un **auxiliar** es un integrante sin
+`is_lead`. Así una persona puede liderar un equipo y ser auxiliar en otro.
 
 Los permisos de `admin` y `user` se editan en **Roles y permisos**. Por seguridad:
 
@@ -35,16 +37,22 @@ app/
 │   ├── Organization/           Departamentos, sedes y equipos de TI
 │   ├── Catalog/                Categorías de atención
 │   ├── ServiceLevel/           Políticas de SLA, horarios laborales y festivos
-│   ├── Ticketing/              Plantillas de mensajes, variables, prioridad y tipo de ticket
+│   ├── Ticketing/              Tickets, mensajes, plantillas, eventos y notificaciones
+│   ├── Reporting/              Estadísticas: periodo, filtros y métricas (TicketStatistics)
 │   └── Shared/                 Piezas usadas por varios dominios (Icon, HasTranslatedLabel, HasSingleDefault)
 │       (cada dominio: Actions/ Enums/ Listeners/ Models/ …)
 ├── Http/
+│   ├── Controllers/Portal/     Área de quien pide soporte
+│   ├── Controllers/Desk/       Área de TI: bandeja, tickets y “Mi equipo” del líder
+│   ├── Controllers/Reports/    Estadísticas globales
 │   ├── Controllers/Management/ Área de configuración (super admin)
 │   ├── Requests/Management/    Validación de cada formulario
 │   ├── Resources/              Lo único que llega a React: nunca se envía un modelo completo
 │   └── Middleware/
 routes/
-├── web.php                     Inicio y perfil
+├── web.php                     Inicio, perfil, adjuntos, notificaciones y estadísticas
+├── portal.php                  /portal/* — tickets propios
+├── desk.php                    /desk/* — bandeja, tickets de los equipos y equipos que se lideran
 ├── auth.php                    Inicio de sesión (sin registro público)
 └── management.php              /management/* — cada recurso protegido por su permiso
 resources/js/
@@ -298,8 +306,9 @@ Flujo y reglas:
 - **Tomar (bandeja):** asignación atómica (`TakeTicket`): si dos agentes pulsan a la vez, solo uno
   gana. El evento `TicketTaken` dispara `SendGreetingMessage`, que envía el saludo del equipo en
   nombre del agente y cuenta como primera respuesta.
-- **Responder:** hay que tomar el ticket antes de responder al solicitante; las notas internas no
-  lo exigen y nunca llegan al portal. Si el solicitante responde a un ticket en espera o resuelto,
+- **Responder:** solo escribe quien tiene el ticket asignado. Cualquier otro agente del equipo ve
+  el chat en solo lectura y, al intentar escribir, se le pregunta «¿Quieres tomar este ticket?».
+  El chat ya no tiene notas internas. Si el solicitante responde a un ticket en espera o resuelto,
   vuelve a "En proceso".
 - **SLA:** "Esperando al usuario" pausa el reloj (`sla_paused_at`). Al reanudar, las fechas
   pendientes se corren el tiempo laboral que estuvo en pausa. `TicketSlaTracker` indica si va en
@@ -316,7 +325,7 @@ Flujo y reglas:
   los vencimientos desde la creación con los tiempos de la nueva prioridad, más las pausas
   terminadas que registra el historial de estados.
 - **Encuesta** (`ticket_ratings`, una por ticket): de 1 a 5 estrellas con comentario opcional,
-  cuando el ticket está resuelto o cerrado. El panel general muestra el promedio de 30 días.
+  cuando el ticket está resuelto o cerrado.
 
 ### Ajustes frente a la propuesta inicial
 
@@ -327,5 +336,87 @@ Flujo y reglas:
 
 ### Próximas tablas
 
-Observadores de tickets, auditoría y SSO (`identity_providers`, `directory_groups`,
+Observadores de tickets, recordatorios y cierre automático, auditoría y SSO (`identity_providers`, `directory_groups`,
 `directory_group_team`).
+
+## Cierre por el usuario, líderes, notificaciones y estadísticas
+
+Migraciones `2026_11_09_000001`–`000004`.
+
+```mermaid
+erDiagram
+    users ||--o{ tickets : "cierra (closed_by_id)"
+    users ||--o{ notifications : recibe
+    tickets {
+        bigint closed_by_id FK "nullable"
+        timestamp requester_archived_at "nullable"
+    }
+    notifications {
+        uuid id PK
+        string type
+        morphs notifiable
+        json data "ticket_id, activity, title, body, excerpt, url"
+        timestamp read_at "nullable"
+    }
+```
+
+**Estados.** Los estados vigentes son Recibido (`received`, antes `new`), En proceso, Esperando
+al usuario, Resuelto y Cerrado (`TicketStatus::current()`). "Esperando a un tercero" y "Cancelado"
+quedaron retirados: la migración movió sus tickets a "En proceso" (o "Recibido" si no tenían
+responsable) y a "Cerrado", y dejó ese paso en el historial con `user_id` nulo. Los casos siguen
+en el enum, marcados `@deprecated`, solo para que el historial anterior se pueda leer; no se ofrecen
+en filtros ni cambios de estado. El agente puede pasar un ticket a En proceso, Esperando al
+usuario, Resuelto o Cerrado, siempre que alguien lo tenga asignado.
+
+**Cierre por el usuario.** En "¿Ya se resolvió?" el solicitante puede:
+
+- *Marcar como resuelto*: el ticket pasa a Cerrado y guarda quién (`closed_by_id`) y cuándo
+  (`closed_at`). Si TI ya lo había resuelto, se conserva esa hora de resolución.
+- *Quitar de mi lista*: archiva (`requester_archived_at`); no borra nada y TI lo sigue viendo.
+  Si el ticket seguía abierto, primero se cierra, porque quitarlo significa que ya no necesita
+  ayuda. Se recupera desde el filtro *Archivados*. Reabrir un ticket lo desarchiva.
+
+Ambas acciones piden confirmación. Después aparece la encuesta de satisfacción.
+
+**Tomar un ticket** (`TakeTicket`). Sirve para un ticket sin responsable y para quitárselo a un
+compañero. La página envía a quién vio como responsable (`assignee_id`); la asignación es un
+UPDATE condicionado a ese mismo dato, así nadie toma un ticket que cambió de manos sin verlo.
+Tomar uno sin responsable envía el saludo; tomarlo de un compañero solo deja la actividad
+«X tomó el ticket de Y», visible para TI.
+
+**Chat.** Las notas internas que ya existían, y las que generan las acciones (asignar, transferir,
+cambiar prioridad), se muestran como una línea de actividad «solo lo ve TI», no como mensajes.
+Las imágenes (JPG, PNG, GIF, WebP) se ven en miniatura y se amplían al hacer clic; se sirven en
+línea por `attachments.preview` con la misma autorización que la descarga, `nosniff` y una CSP
+cerrada. SVG nunca se muestra en línea.
+
+**Notificaciones** (`TicketActivityNotification`). Los eventos `TicketMessagePosted`,
+`TicketStatusChanged` y `TicketTransferred` avisan:
+
+| Qué pasó | A quién | Título |
+| --- | --- | --- |
+| TI responde (incluido el saludo) | Solicitante | Tienes un nuevo mensaje |
+| El solicitante responde | Agente asignado | El solicitante respondió |
+| Esperando al usuario, Resuelto, Cerrado, Transferido | Solicitante | Tu ticket fue actualizado |
+
+Nadie recibe aviso de lo que hizo él mismo. La copia en la aplicación se guarda al instante
+(conexión `sync`); el correo es opcional (`HELPDESK_MAIL_NOTIFICATIONS=true`) y va por la cola.
+La campana muestra los no leídos y se actualiza cada minuto. Abrir la notificación o el ticket la
+marca como leída.
+
+**Bandeja del equipo.** Muestra solo los tickets de los equipos de la persona, aunque tenga
+`tickets.view_all`. Orden: primero los que corren contra el reloj, por el vencimiento que aplica
+ahora (primera respuesta o resolución); luego los que esperan al usuario; al final los terminados.
+
+**Mi equipo** (`desk/teams/{team}`, `TeamPolicy::lead`). El líder agrega auxiliares: se crean
+como `admin`, activos, integrantes sin `is_lead` del equipo; nombrar líderes sigue siendo del
+super admin. Ve las métricas del equipo y de cada integrante en el periodo, y la carga abierta de
+hoy. Solo de los equipos que lidera.
+
+**Estadísticas** (`/reports`, requiere `reports.view` y `tickets.view_all`). Es la página de
+inicio del super admin; ya no ve la tabla operativa. Filtra por periodo (máximo un año), área del
+solicitante, equipo y estado. Muestra volumen por estado, por área, por categoría y por equipo,
+cumplimiento de SLA, tiempos promedio, calificación y rendimiento por equipo y por agente.
+`TicketStatistics` cuenta los tickets **creados** en el periodo; los tiempos se miden en
+minutos laborales con el calendario de cada ticket. Agrega en PHP para funcionar igual en SQLite
+y PostgreSQL; con cientos de miles de tickets por periodo convendría precalcular totales diarios.

@@ -3,8 +3,9 @@ import Icon from '@/Components/ui/Icon';
 import { PageProps } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { PropsWithChildren, useEffect, useState } from 'react';
-import { navigation } from './navigation';
+import { navigation, NavigationItem } from './navigation';
 import BackgroundOrbs from './Partials/BackgroundOrbs';
+import NotificationBell from './Partials/NotificationBell';
 import Sidebar from './Partials/Sidebar';
 import UserMenu from './Partials/UserMenu';
 
@@ -31,11 +32,25 @@ export default function AppLayout({
         return () => document.removeEventListener('keydown', closeOnEscape);
     }, [isMenuOpen]);
 
+    const teams = auth.user.teams ?? [];
+    const meetsRequirement = (item: NavigationItem): boolean => {
+        switch (item.requires) {
+            case 'team':
+                return teams.length > 0;
+            case 'lead':
+                return teams.some((team) => team.is_lead);
+            default:
+                return true;
+        }
+    };
+
     const sections = navigation
         .map((section) => ({
             ...section,
             items: section.items.filter(
-                (item) => !item.permission || auth.permissions.includes(item.permission),
+                (item) =>
+                    (item.permissions ?? []).every((permission) => auth.permissions.includes(permission)) &&
+                    meetsRequirement(item),
             ),
         }))
         .filter((section) => section.items.length > 0);
@@ -77,6 +92,7 @@ export default function AppLayout({
                             <span className="sr-only">Menú principal</span>
                         </button>
                         <div className="flex-1" />
+                        <NotificationBell />
                         <UserMenu user={auth.user} />
                     </header>
 

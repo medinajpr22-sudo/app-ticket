@@ -23,3 +23,24 @@ export function formatRelative(isoDate: string): string {
 
     return 'hace un momento';
 }
+
+const dateTime = new Intl.DateTimeFormat('es', { dateStyle: 'medium', timeStyle: 'short' });
+
+const shortDate = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/**
+ * A precise moment in Spanish, e.g. "7 nov 2026, 10:32".
+ */
+export function formatDateTime(isoDate: string): string {
+    return dateTime.format(new Date(isoDate));
+}
+
+/**
+ * A calendar day written as Y-m-d, in Spanish, e.g. "7 nov 2026".
+ * The day is read as local so it never shifts by the time zone.
+ */
+export function formatDay(day: string): string {
+    const [year, month, date] = day.split('-').map(Number);
+
+    return shortDate.format(new Date(year, month - 1, date));
+}

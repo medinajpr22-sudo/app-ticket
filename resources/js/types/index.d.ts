@@ -164,13 +164,11 @@ export interface MessageTemplate {
 }
 
 export type TicketStatusValue =
-    | 'new'
+    | 'received'
     | 'in_progress'
     | 'waiting_on_requester'
-    | 'waiting_on_third_party'
     | 'resolved'
-    | 'closed'
-    | 'cancelled';
+    | 'closed';
 
 export type SlaStateValue = 'on_track' | 'at_risk' | 'breached' | 'paused' | 'met' | 'missed';
 
@@ -181,6 +179,7 @@ export interface TicketAttachment {
     name: string;
     size_bytes: number;
     url: string;
+    preview_url: string | null;
 }
 
 export interface AttachmentLimits {
@@ -222,6 +221,9 @@ export interface Ticket {
     updated_at: string | null;
     first_responded_at: string | null;
     resolved_at: string | null;
+    closed_at: string | null;
+    closed_by?: { id: number; name: string } | null;
+    archived_at: string | null;
     requester?: User;
     assignee?: User | null;
     team?: { id: number; name: string; icon: IconName };
@@ -263,7 +265,51 @@ export type PageProps<
         user: User;
         permissions: string[];
     };
+    notifications: {
+        unread_count: number;
+        recent: AppNotification[];
+    } | null;
     flash: {
         success: string | null;
     };
 };
+
+export interface AppNotification {
+    id: string;
+    title: string;
+    body: string;
+    excerpt: string | null;
+    ticket_id: number | null;
+    read_at: string | null;
+    created_at: string;
+}
+
+/**
+ * Numbers about a group of tickets. Times are business minutes; shares are
+ * percentages. Null means there is nothing to measure yet.
+ */
+export interface TicketMetrics {
+    total: number;
+    received: number;
+    in_progress: number;
+    waiting: number;
+    open: number;
+    resolved: number;
+    resolution_compliance: number | null;
+    first_response_compliance: number | null;
+    average_first_response_minutes: number | null;
+    average_resolution_minutes: number | null;
+    average_rating: number | null;
+    ratings: number;
+}
+
+export interface TicketBreakdown {
+    id: number | null;
+    label: string;
+    total: number;
+}
+
+export interface ReportPeriod {
+    from: string;
+    to: string;
+}

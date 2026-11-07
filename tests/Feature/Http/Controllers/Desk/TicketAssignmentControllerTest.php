@@ -86,7 +86,7 @@ class TicketAssignmentControllerTest extends TestCase
 
         $this->assertSame($infrastructure->id, $ticket->team_id);
         $this->assertNull($ticket->assignee_id);
-        $this->assertSame(TicketStatus::New, $ticket->status);
+        $this->assertSame(TicketStatus::Received, $ticket->status);
         $this->assertSame(
             'Tu solicitud pasó al equipo Infraestructura y Hardware, que continuará con ella.',
             $ticket->messages()->where('type', TicketMessageType::Automated)->sole()->body,

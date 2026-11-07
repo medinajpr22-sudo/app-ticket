@@ -12,23 +12,19 @@ use Illuminate\Support\Facades\Gate;
 class TicketMessageController extends Controller
 {
     /**
-     * An agent answers the requester or leaves a note only IT can read.
+     * The agent who has the ticket answers the requester.
      */
     public function store(StoreTicketMessageRequest $request, Ticket $ticket, ReplyToTicket $replyToTicket): RedirectResponse
     {
-        $isInternalNote = $request->boolean('is_internal');
-
-        Gate::authorize($isInternalNote ? 'addInternalNote' : 'respond', $ticket);
+        Gate::authorize('respond', $ticket);
 
         $replyToTicket->handle(
             $ticket,
             $request->user(),
             $request->validated('body'),
-            $isInternalNote,
             $request->validated('attachments', []),
         );
 
-        return to_route('desk.tickets.show', $ticket)
-            ->with('success', $isInternalNote ? __('Internal note saved.') : __('Message sent.'));
+        return to_route('desk.tickets.show', $ticket)->with('success', __('Message sent.'));
     }
 }

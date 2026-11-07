@@ -10,7 +10,7 @@ return [
 
     'role_slug_description' => [
         'SuperAdmin' => 'Configura toda la plataforma: usuarios, equipos, categorías, SLA y seguridad.',
-        'Admin' => 'Personal de TI. Atiende los tickets de los equipos a los que pertenece.',
+        'Admin' => 'Personal de TI. Atiende los tickets de sus equipos; quien lidera un equipo agrega auxiliares y sigue su rendimiento.',
         'User' => 'Colaborador. Crea tickets y hace seguimiento a sus solicitudes.',
     ],
 
@@ -20,12 +20,12 @@ return [
         'ViewTeamTickets' => 'Ver los tickets de sus equipos',
         'ViewAllTickets' => 'Ver todos los tickets',
         'ReplyToTickets' => 'Responder tickets',
-        'AddInternalNotes' => 'Escribir notas internas',
         'TakeTickets' => 'Tomar tickets',
         'AssignTickets' => 'Asignar y reasignar tickets',
         'ChangeTicketStatus' => 'Cambiar el estado de los tickets',
         'ChangeTicketPriority' => 'Cambiar la prioridad de los tickets',
         'ViewReports' => 'Ver reportes',
+        'LeadTeams' => 'Liderar sus equipos: agregar auxiliares y ver su rendimiento',
         'ManageUsers' => 'Gestionar usuarios',
         'ManageTeams' => 'Gestionar equipos',
         'ManageCategories' => 'Gestionar categorías',
@@ -39,6 +39,7 @@ return [
     'permission_group' => [
         'Tickets' => 'Tickets',
         'Reports' => 'Reportes',
+        'Leadership' => 'Liderazgo de equipos',
         'Management' => 'Administración de la plataforma',
     ],
 
@@ -60,7 +61,7 @@ return [
     ],
 
     'ticket_status' => [
-        'New' => 'Recibido',
+        'Received' => 'Recibido',
         'InProgress' => 'En proceso',
         'WaitingOnRequester' => 'Esperando al usuario',
         'WaitingOnThirdParty' => 'Esperando a un tercero',

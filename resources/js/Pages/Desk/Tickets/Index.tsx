@@ -121,7 +121,7 @@ export default function Index({
                         ))}
                     </Select>
                 </div>
-                {teams.length > 1 && (
+                {teams.length > 0 && (
                     <div className="w-60">
                         <label htmlFor="team" className="sr-only">Filtrar por equipo</label>
                         <Select id="team" value={filters.team} onChange={(e) => applyFilters({ team: e.target.value })}>

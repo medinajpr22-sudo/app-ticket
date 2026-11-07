@@ -41,6 +41,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $sla_paused_at
  * @property Carbon|null $resolved_at
  * @property Carbon|null $closed_at
+ * @property int|null $closed_by_id
+ * @property Carbon|null $requester_archived_at
  * @property Carbon $created_at
  */
 #[Fillable([
@@ -61,6 +63,8 @@ use Illuminate\Support\Carbon;
     'sla_paused_at',
     'resolved_at',
     'closed_at',
+    'closed_by_id',
+    'requester_archived_at',
 ])]
 #[UseFactory(TicketFactory::class)]
 class Ticket extends Model
@@ -86,6 +90,7 @@ class Ticket extends Model
             'sla_paused_at' => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at' => 'datetime',
+            'requester_archived_at' => 'datetime',
         ];
     }
 
@@ -131,6 +136,16 @@ class Ticket extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    /**
+     * Who closed the ticket: the requester, an agent, or nobody when the system did.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by_id');
     }
 
     /**
@@ -194,6 +209,24 @@ class Ticket extends Model
     protected function open(Builder $query): void
     {
         $query->whereIn('status', TicketStatus::open());
+    }
+
+    /**
+     * The order of the team inbox: what is running against the clock first,
+     * by the deadline that applies now; paused tickets next; finished ones last.
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function orderByUrgency(Builder $query): void
+    {
+        $query
+            ->orderByRaw(
+                'case when status in (?, ?) then 0 when status = ? then 1 else 2 end',
+                [TicketStatus::Received->value, TicketStatus::InProgress->value, TicketStatus::WaitingOnRequester->value],
+            )
+            ->orderByRaw('case when first_responded_at is null then first_response_due_at else resolution_due_at end')
+            ->orderBy('id');
     }
 
     /**

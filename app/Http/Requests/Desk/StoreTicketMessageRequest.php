@@ -19,7 +19,6 @@ class StoreTicketMessageRequest extends FormRequest
     {
         return [
             'body' => ['required', 'string', 'max:5000'],
-            'is_internal' => ['required', 'boolean'],
             ...$this->attachmentRules(),
         ];
     }

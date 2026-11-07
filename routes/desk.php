@@ -2,6 +2,8 @@
 
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Http\Controllers\Desk\TakeTicketController;
+use App\Http\Controllers\Desk\TeamController;
+use App\Http\Controllers\Desk\TeamMemberController;
 use App\Http\Controllers\Desk\TicketAssignmentController;
 use App\Http\Controllers\Desk\TicketController;
 use App\Http\Controllers\Desk\TicketMessageController;
@@ -31,4 +33,11 @@ Route::middleware('auth')->prefix('desk')->name('desk.')->group(function () {
     Route::put('tickets/{ticket}/priority', [TicketPriorityController::class, 'update'])->name('tickets.priority.update');
     Route::put('tickets/{ticket}/assignment', [TicketAssignmentController::class, 'update'])->name('tickets.assignment.update');
     Route::post('tickets/{ticket}/transfer', [TicketAssignmentController::class, 'transfer'])->name('tickets.transfer');
+
+    Route::get('teams', [TeamController::class, 'index'])
+        ->middleware('can:'.PermissionSlug::LeadTeams->value)
+        ->name('teams.index');
+    Route::get('teams/{team}', [TeamController::class, 'show'])->name('teams.show');
+    Route::get('teams/{team}/members/create', [TeamMemberController::class, 'create'])->name('teams.members.create');
+    Route::post('teams/{team}/members', [TeamMemberController::class, 'store'])->name('teams.members.store');
 });

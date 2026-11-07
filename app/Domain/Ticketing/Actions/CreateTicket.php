@@ -48,7 +48,7 @@ class CreateTicket
                 'category_id' => $category->id,
                 'business_calendar_id' => $calendar->id,
                 'type' => $category->default_ticket_type,
-                'status' => TicketStatus::New,
+                'status' => TicketStatus::Received,
                 'priority' => $priority,
                 'channel' => TicketChannel::Portal,
                 'subject' => $attributes['subject'],
@@ -67,7 +67,7 @@ class CreateTicket
             $ticket->statusChanges()->create([
                 'user_id' => $requester->id,
                 'from_status' => null,
-                'to_status' => TicketStatus::New,
+                'to_status' => TicketStatus::Received,
             ]);
 
             $ticket->assignments()->create([

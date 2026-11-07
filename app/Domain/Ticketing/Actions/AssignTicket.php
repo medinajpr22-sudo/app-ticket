@@ -24,7 +24,7 @@ class AssignTicket
         }
 
         return DB::transaction(function () use ($ticket, $assignee, $actor, $reason): Ticket {
-            $wasUnattended = $ticket->status === TicketStatus::New;
+            $wasUnattended = $ticket->status === TicketStatus::Received;
 
             $ticket->assignee()->associate($assignee)->save();
 

@@ -6,6 +6,7 @@ use App\Domain\Catalog\Models\Category;
 use App\Domain\ServiceLevel\Models\SlaPolicy;
 use App\Domain\ServiceLevel\Models\SlaTarget;
 use App\Domain\Ticketing\Actions\CreateTicket;
+use App\Domain\Ticketing\Actions\MarkTicketNotificationsAsRead;
 use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Models\Ticket;
@@ -30,14 +31,20 @@ class TicketController extends Controller
     {
         /** @var array{status?: string|null} $filters */
         $filters = $request->validate([
-            'status' => ['nullable', Rule::in(['open', 'finished'])],
+            'status' => ['nullable', Rule::in(['open', 'finished', 'archived'])],
         ]);
+
+        $status = $filters['status'] ?? null;
 
         $tickets = Ticket::query()
             ->whereBelongsTo($request->user(), 'requester')
-            ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $status === 'open'
-                ? $query->whereIn('status', TicketStatus::open())
-                : $query->whereNotIn('status', TicketStatus::open()))
+            ->when(
+                $status === 'archived',
+                fn (Builder $query) => $query->whereNotNull('requester_archived_at'),
+                fn (Builder $query) => $query->whereNull('requester_archived_at'),
+            )
+            ->when($status === 'open', fn (Builder $query) => $query->whereIn('status', TicketStatus::open()))
+            ->when($status === 'finished', fn (Builder $query) => $query->whereNotIn('status', TicketStatus::open()))
             ->with(['team', 'category', 'assignee'])
             ->latest()
             ->orderByDesc('id')
@@ -46,7 +53,7 @@ class TicketController extends Controller
 
         return Inertia::render('Portal/Tickets/Index', [
             'tickets' => TicketResource::collection($tickets),
-            'filters' => ['status' => $filters['status'] ?? ''],
+            'filters' => ['status' => $status ?? ''],
         ]);
     }
 
@@ -101,14 +108,17 @@ class TicketController extends Controller
     /**
      * Display a ticket and the part of its conversation the requester may read.
      */
-    public function show(Ticket $ticket): Response
+    public function show(Request $request, Ticket $ticket, MarkTicketNotificationsAsRead $markNotificationsAsRead): Response
     {
         Gate::authorize('view', $ticket);
+
+        $markNotificationsAsRead->handle($request->user(), $ticket);
 
         $ticket->load([
             'team',
             'category',
             'assignee',
+            'closedBy',
             'rating',
             'messages' => fn ($query) => $query->visibleToRequester()->with(['author', 'attachments'])->oldest()->orderBy('id'),
         ]);
@@ -118,8 +128,10 @@ class TicketController extends Controller
             'attachmentLimits' => TicketAttachment::limits(),
             'can' => [
                 'reply' => Gate::allows('reply', $ticket),
-                'resolve' => Gate::allows('resolve', $ticket),
+                'close' => Gate::allows('close', $ticket),
                 'reopen' => Gate::allows('reopen', $ticket),
+                'archive' => Gate::allows('archive', $ticket),
+                'unarchive' => Gate::allows('unarchive', $ticket),
                 'rate' => Gate::allows('rate', $ticket),
             ],
         ]);

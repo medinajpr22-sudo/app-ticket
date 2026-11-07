@@ -5,7 +5,10 @@ export interface NavigationItem {
     routeName: string;
     activePatterns: string[];
     icon: IconName;
-    permission?: string;
+    /** Every one of them is needed. */
+    permissions?: string[];
+    /** Belonging to a team, or leading one, on top of the permissions. */
+    requires?: 'team' | 'lead';
 }
 
 export interface NavigationSection {
@@ -14,19 +17,19 @@ export interface NavigationSection {
 }
 
 /**
- * Sidebar entries. An item with a permission is only shown to users who have it;
- * the server enforces the same permission on the route.
+ * Sidebar entries. An item with permissions is only shown to users who have
+ * them all; the server enforces the same rules on the route.
  */
 export const navigation: NavigationSection[] = [
     {
         label: 'General',
         items: [
             {
-                label: 'Panel general',
-                routeName: 'dashboard',
-                activePatterns: ['dashboard'],
-                icon: 'home',
-                permission: 'users.manage',
+                label: 'Estadísticas',
+                routeName: 'reports.overview',
+                activePatterns: ['reports.*'],
+                icon: 'chart',
+                permissions: ['reports.view', 'tickets.view_all'],
             },
         ],
     },
@@ -38,14 +41,14 @@ export const navigation: NavigationSection[] = [
                 routeName: 'portal.tickets.index',
                 activePatterns: ['portal.tickets.index', 'portal.tickets.show'],
                 icon: 'ticket',
-                permission: 'tickets.view_own',
+                permissions: ['tickets.view_own'],
             },
             {
                 label: 'Nuevo ticket',
                 routeName: 'portal.tickets.create',
                 activePatterns: ['portal.tickets.create'],
                 icon: 'plus',
-                permission: 'tickets.create',
+                permissions: ['tickets.create'],
             },
         ],
     },
@@ -57,7 +60,16 @@ export const navigation: NavigationSection[] = [
                 routeName: 'desk.tickets.index',
                 activePatterns: ['desk.tickets.*'],
                 icon: 'inbox',
-                permission: 'tickets.view_team',
+                permissions: ['tickets.view_team'],
+                requires: 'team',
+            },
+            {
+                label: 'Mi equipo',
+                routeName: 'desk.teams.index',
+                activePatterns: ['desk.teams.*'],
+                icon: 'users',
+                permissions: ['teams.lead'],
+                requires: 'lead',
             },
         ],
     },
@@ -69,42 +81,42 @@ export const navigation: NavigationSection[] = [
                 routeName: 'management.users.index',
                 activePatterns: ['management.users.*'],
                 icon: 'user',
-                permission: 'users.manage',
+                permissions: ['users.manage'],
             },
             {
                 label: 'Equipos',
                 routeName: 'management.teams.index',
                 activePatterns: ['management.teams.*'],
                 icon: 'users',
-                permission: 'teams.manage',
+                permissions: ['teams.manage'],
             },
             {
                 label: 'Categorías',
                 routeName: 'management.categories.index',
                 activePatterns: ['management.categories.*'],
                 icon: 'tag',
-                permission: 'categories.manage',
+                permissions: ['categories.manage'],
             },
             {
                 label: 'SLA y horarios',
                 routeName: 'management.service-levels.index',
                 activePatterns: ['management.service-levels.*'],
                 icon: 'clock',
-                permission: 'sla_policies.manage',
+                permissions: ['sla_policies.manage'],
             },
             {
                 label: 'Plantillas',
                 routeName: 'management.message-templates.index',
                 activePatterns: ['management.message-templates.*'],
                 icon: 'mail',
-                permission: 'message_templates.manage',
+                permissions: ['message_templates.manage'],
             },
             {
                 label: 'Roles y permisos',
                 routeName: 'management.roles.index',
                 activePatterns: ['management.roles.*'],
                 icon: 'shield',
-                permission: 'roles.manage',
+                permissions: ['roles.manage'],
             },
         ],
     },

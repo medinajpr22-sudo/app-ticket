@@ -13,25 +13,14 @@ use Illuminate\Support\Facades\Gate;
 class TicketResolutionController extends Controller
 {
     /**
-     * The requester says the problem is solved.
-     */
-    public function store(Request $request, Ticket $ticket, ChangeTicketStatus $changeStatus): RedirectResponse
-    {
-        Gate::authorize('resolve', $ticket);
-
-        $changeStatus->handle($ticket, TicketStatus::Resolved, $request->user());
-
-        return to_route('portal.tickets.show', $ticket)->with('success', __('Ticket marked as resolved.'));
-    }
-
-    /**
-     * The requester says the problem came back. It returns to whoever had it.
+     * The requester rejects the solution IT proposed: the problem came back.
+     * The ticket returns to whoever had it.
      */
     public function destroy(Request $request, Ticket $ticket, ChangeTicketStatus $changeStatus): RedirectResponse
     {
         Gate::authorize('reopen', $ticket);
 
-        $changeStatus->handle($ticket, $ticket->assignee_id ? TicketStatus::InProgress : TicketStatus::New, $request->user());
+        $changeStatus->handle($ticket, $ticket->assignee_id ? TicketStatus::InProgress : TicketStatus::Received, $request->user());
 
         return to_route('portal.tickets.show', $ticket)->with('success', __('Ticket reopened.'));
     }

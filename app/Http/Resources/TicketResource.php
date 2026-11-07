@@ -31,6 +31,12 @@ class TicketResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
             'first_responded_at' => $this->first_responded_at?->toIso8601String(),
             'resolved_at' => $this->resolved_at?->toIso8601String(),
+            'closed_at' => $this->closed_at?->toIso8601String(),
+            'closed_by' => $this->whenLoaded('closedBy', fn (): ?array => $this->closedBy ? [
+                'id' => $this->closedBy->id,
+                'name' => $this->closedBy->name,
+            ] : null),
+            'archived_at' => $this->requester_archived_at?->toIso8601String(),
             'requester' => UserResource::make($this->whenLoaded('requester')),
             'assignee' => UserResource::make($this->whenLoaded('assignee')),
             'team' => $this->whenLoaded('team', fn (): array => [

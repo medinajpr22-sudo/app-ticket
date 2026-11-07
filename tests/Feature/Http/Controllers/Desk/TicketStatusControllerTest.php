@@ -77,13 +77,49 @@ class TicketStatusControllerTest extends TestCase
         ]);
     }
 
-    public function test_agents_cannot_set_statuses_reserved_for_the_system(): void
+    public function test_an_agent_can_close_a_ticket_and_it_records_who_did(): void
     {
         $this->actingAs($this->agent)
             ->put(route('desk.tickets.status.update', $this->ticket), ['status' => TicketStatus::Closed->value])
-            ->assertSessionHasErrors(['status']);
+            ->assertSessionHasNoErrors();
+
+        $this->ticket->refresh();
+
+        $this->assertSame(TicketStatus::Closed, $this->ticket->status);
+        $this->assertTrue($this->ticket->closedBy()->is($this->agent));
+        $this->assertTrue($this->ticket->closed_at->equalTo(now()));
+    }
+
+    public function test_agents_cannot_set_received_nor_the_retired_statuses(): void
+    {
+        foreach ([TicketStatus::Received, TicketStatus::WaitingOnThirdParty, TicketStatus::Cancelled] as $status) {
+            $this->actingAs($this->agent)
+                ->put(route('desk.tickets.status.update', $this->ticket), ['status' => $status->value])
+                ->assertSessionHasErrors(['status']);
+        }
 
         $this->assertSame(TicketStatus::InProgress, $this->ticket->refresh()->status);
+    }
+
+    public function test_the_status_choices_do_not_offer_the_retired_statuses(): void
+    {
+        $this->actingAs($this->agent)
+            ->get(route('desk.tickets.show', $this->ticket))
+            ->assertInertia(fn ($page) => $page->where('statusOptions', [
+                ['value' => 'in_progress', 'label' => 'En proceso'],
+                ['value' => 'waiting_on_requester', 'label' => 'Esperando al usuario'],
+                ['value' => 'resolved', 'label' => 'Resuelto'],
+                ['value' => 'closed', 'label' => 'Cerrado'],
+            ]));
+    }
+
+    public function test_a_received_ticket_is_taken_before_its_status_changes(): void
+    {
+        $received = Ticket::factory()->create(['team_id' => $this->ticket->team_id]);
+
+        $this->actingAs($this->agent)
+            ->put(route('desk.tickets.status.update', $received), ['status' => TicketStatus::InProgress->value])
+            ->assertForbidden();
     }
 
     public function test_a_requester_cannot_change_the_status_from_the_desk(): void

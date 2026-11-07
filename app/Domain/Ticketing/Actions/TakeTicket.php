@@ -3,6 +3,7 @@
 namespace App\Domain\Ticketing\Actions;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Ticketing\Enums\TicketMessageType;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Events\TicketTaken;
 use App\Domain\Ticketing\Models\Ticket;
@@ -11,42 +12,53 @@ use Illuminate\Validation\ValidationException;
 
 class TakeTicket
 {
+    public function __construct(private ChangeTicketStatus $changeStatus) {}
+
     /**
-     * Assign a new ticket to the agent who takes it.
+     * Make the agent responsible for the ticket, so they can write in it.
      *
-     * The assignment is a single conditional update, so when two agents press
-     * "Take" at the same time only one of them gets the ticket.
+     * The agent confirms on the screen what they saw: nobody had the ticket,
+     * or a given colleague had it. The assignment is a single conditional
+     * update on that same state, so when two agents take the ticket at once
+     * only one gets it, and nobody takes it from a person they did not see.
      *
-     * @throws ValidationException when someone else already took it.
+     * A ticket nobody had starts being worked on and the requester gets the
+     * team's greeting. Taking it from a colleague only changes who has it.
+     *
+     * @param  int|null  $expectedAssigneeId  Who had the ticket when the agent decided.
+     *
+     * @throws ValidationException when the ticket changed hands in the meantime.
      */
-    public function handle(Ticket $ticket, User $agent): Ticket
+    public function handle(Ticket $ticket, User $agent, ?int $expectedAssigneeId = null): Ticket
     {
-        return DB::transaction(function () use ($ticket, $agent): Ticket {
+        if ($ticket->assignee()->is($agent)) {
+            return $ticket;
+        }
+
+        return DB::transaction(function () use ($ticket, $agent, $expectedAssigneeId): Ticket {
             $wasTaken = Ticket::query()
                 ->whereKey($ticket->id)
-                ->whereNull('assignee_id')
-                ->where('status', TicketStatus::New)
-                ->update([
-                    'assignee_id' => $agent->id,
-                    'status' => TicketStatus::InProgress,
-                    'updated_at' => now(),
-                ]) === 1;
+                ->where('status', '!=', TicketStatus::Closed)
+                ->when(
+                    $expectedAssigneeId === null,
+                    fn ($query) => $query->whereNull('assignee_id'),
+                    fn ($query) => $query->where('assignee_id', $expectedAssigneeId),
+                )
+                ->update(['assignee_id' => $agent->id, 'updated_at' => now()]) === 1;
 
             $ticket->refresh();
 
             if (! $wasTaken) {
                 throw ValidationException::withMessages([
-                    'ticket' => $ticket->assignee
+                    'ticket' => $ticket->assignee && $ticket->status !== TicketStatus::Closed
                         ? __(':name already took this ticket.', ['name' => $ticket->assignee->name])
                         : __('This ticket can no longer be taken.'),
                 ]);
             }
 
-            $ticket->statusChanges()->create([
-                'user_id' => $agent->id,
-                'from_status' => TicketStatus::New,
-                'to_status' => TicketStatus::InProgress,
-            ]);
+            if ($ticket->status === TicketStatus::Received) {
+                $this->changeStatus->handle($ticket, TicketStatus::InProgress, $agent);
+            }
 
             $ticket->assignments()->create([
                 'team_id' => $ticket->team_id,
@@ -54,7 +66,20 @@ class TakeTicket
                 'user_id' => $agent->id,
             ]);
 
-            TicketTaken::dispatch($ticket, $agent);
+            if ($expectedAssigneeId === null) {
+                TicketTaken::dispatch($ticket, $agent);
+
+                return $ticket;
+            }
+
+            $ticket->messages()->create([
+                'author_id' => $agent->id,
+                'type' => TicketMessageType::InternalNote,
+                'body' => __(':agent took the ticket from :previous.', [
+                    'agent' => $agent->name,
+                    'previous' => User::query()->find($expectedAssigneeId)?->name ?? __('another agent'),
+                ]),
+            ]);
 
             return $ticket;
         });

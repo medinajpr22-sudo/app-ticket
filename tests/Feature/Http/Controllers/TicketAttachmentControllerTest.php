@@ -6,6 +6,8 @@ use App\Domain\Catalog\Models\Category;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
 use App\Domain\Ticketing\Actions\ReplyToTicket;
+use App\Domain\Ticketing\Actions\StoreMessageAttachments;
+use App\Domain\Ticketing\Enums\TicketMessageType;
 use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Models\Ticket;
 use App\Domain\Ticketing\Models\TicketAttachment;
@@ -67,9 +69,12 @@ class TicketAttachmentControllerTest extends TestCase
         $agent->teams()->attach($team);
         $ticket = Ticket::factory()->takenBy($agent)->create(['team_id' => $team->id]);
 
-        app(ReplyToTicket::class)->handle($ticket, $agent, 'Log del servidor', isInternalNote: true, attachments: [
-            UploadedFile::fake()->create('servidor.txt', 4, 'text/plain'),
+        $note = $ticket->messages()->create([
+            'author_id' => $agent->id,
+            'type' => TicketMessageType::InternalNote,
+            'body' => 'Log del servidor',
         ]);
+        app(StoreMessageAttachments::class)->handle($note, [UploadedFile::fake()->create('servidor.txt', 4, 'text/plain')]);
         $attachment = TicketAttachment::query()->sole();
 
         $this->actingAs($ticket->requester)->get(route('attachments.show', $attachment))->assertForbidden();

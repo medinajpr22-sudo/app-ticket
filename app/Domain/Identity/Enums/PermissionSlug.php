@@ -13,12 +13,12 @@ enum PermissionSlug: string
     case ViewTeamTickets = 'tickets.view_team';
     case ViewAllTickets = 'tickets.view_all';
     case ReplyToTickets = 'tickets.reply';
-    case AddInternalNotes = 'tickets.add_internal_note';
     case TakeTickets = 'tickets.take';
     case AssignTickets = 'tickets.assign';
     case ChangeTicketStatus = 'tickets.change_status';
     case ChangeTicketPriority = 'tickets.change_priority';
     case ViewReports = 'reports.view';
+    case LeadTeams = 'teams.lead';
     case ManageUsers = 'users.manage';
     case ManageTeams = 'teams.manage';
     case ManageCategories = 'categories.manage';
@@ -33,6 +33,7 @@ enum PermissionSlug: string
         return match (true) {
             str_starts_with($this->value, 'tickets.') => PermissionGroup::Tickets,
             $this === self::ViewReports => PermissionGroup::Reports,
+            $this === self::LeadTeams => PermissionGroup::Leadership,
             default => PermissionGroup::Management,
         };
     }
@@ -60,12 +61,12 @@ enum PermissionSlug: string
                 self::ViewOwnTickets,
                 self::ViewTeamTickets,
                 self::ReplyToTickets,
-                self::AddInternalNotes,
                 self::TakeTickets,
                 self::AssignTickets,
                 self::ChangeTicketStatus,
                 self::ChangeTicketPriority,
                 self::ViewReports,
+                self::LeadTeams,
             ],
             RoleSlug::User => [
                 self::CreateTickets,

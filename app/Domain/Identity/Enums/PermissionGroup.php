@@ -13,5 +13,6 @@ enum PermissionGroup: string
 
     case Tickets = 'tickets';
     case Reports = 'reports';
+    case Leadership = 'leadership';
     case Management = 'management';
 }

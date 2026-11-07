@@ -6,7 +6,13 @@ use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Listeners\RecordLastLogin;
 use App\Domain\Identity\Models\User;
 use App\Domain\Ticketing\Events\TicketCreated;
+use App\Domain\Ticketing\Events\TicketMessagePosted;
+use App\Domain\Ticketing\Events\TicketStatusChanged;
 use App\Domain\Ticketing\Events\TicketTaken;
+use App\Domain\Ticketing\Events\TicketTransferred;
+use App\Domain\Ticketing\Listeners\NotifyAboutNewMessage;
+use App\Domain\Ticketing\Listeners\NotifyRequesterOfStatusChange;
+use App\Domain\Ticketing\Listeners\NotifyRequesterOfTransfer;
 use App\Domain\Ticketing\Listeners\SendAcknowledgementMessage;
 use App\Domain\Ticketing\Listeners\SendGreetingMessage;
 use Illuminate\Auth\Events\Login;
@@ -45,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Login::class, RecordLastLogin::class);
         Event::listen(TicketCreated::class, SendAcknowledgementMessage::class);
         Event::listen(TicketTaken::class, SendGreetingMessage::class);
+        Event::listen(TicketMessagePosted::class, NotifyAboutNewMessage::class);
+        Event::listen(TicketStatusChanged::class, NotifyRequesterOfStatusChange::class);
+        Event::listen(TicketTransferred::class, NotifyRequesterOfTransfer::class);
     }
 
     /**

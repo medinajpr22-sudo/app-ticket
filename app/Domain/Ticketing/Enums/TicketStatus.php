@@ -8,12 +8,22 @@ enum TicketStatus: string
 {
     use HasTranslatedLabel;
 
-    case New = 'new';
+    case Received = 'received';
     case InProgress = 'in_progress';
     case WaitingOnRequester = 'waiting_on_requester';
-    case WaitingOnThirdParty = 'waiting_on_third_party';
     case Resolved = 'resolved';
     case Closed = 'closed';
+
+    /**
+     * @deprecated Retired on 2026-11-09. Tickets in it moved to "in progress";
+     *             the case stays so the status history recorded before still loads.
+     */
+    case WaitingOnThirdParty = 'waiting_on_third_party';
+
+    /**
+     * @deprecated Retired on 2026-11-09. Tickets in it moved to "closed";
+     *             the case stays so the status history recorded before still loads.
+     */
     case Cancelled = 'cancelled';
 
     /**
@@ -22,6 +32,14 @@ enum TicketStatus: string
     public function isOpen(): bool
     {
         return in_array($this, self::open(), true);
+    }
+
+    /**
+     * No ticket can enter this status anymore; it only appears in old history.
+     */
+    public function isRetired(): bool
+    {
+        return in_array($this, self::retired(), true);
     }
 
     /**
@@ -37,17 +55,35 @@ enum TicketStatus: string
      */
     public static function open(): array
     {
-        return [self::New, self::InProgress, self::WaitingOnRequester, self::WaitingOnThirdParty];
+        return [self::Received, self::InProgress, self::WaitingOnRequester];
     }
 
     /**
-     * Statuses an agent can move a ticket to by hand. New is reached by
-     * creating a ticket and Closed by the scheduled closing of resolved ones.
+     * @return list<self>
+     */
+    public static function retired(): array
+    {
+        return [self::WaitingOnThirdParty, self::Cancelled];
+    }
+
+    /**
+     * The statuses a ticket can be in today, in the order of its life.
+     *
+     * @return list<self>
+     */
+    public static function current(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $status): bool => ! $status->isRetired()));
+    }
+
+    /**
+     * Statuses an agent can move a ticket to by hand. Received is reached by
+     * creating or transferring a ticket, never by choice.
      *
      * @return list<self>
      */
     public static function agentChoices(): array
     {
-        return [self::InProgress, self::WaitingOnRequester, self::WaitingOnThirdParty, self::Resolved, self::Cancelled];
+        return [self::InProgress, self::WaitingOnRequester, self::Resolved, self::Closed];
     }
 }

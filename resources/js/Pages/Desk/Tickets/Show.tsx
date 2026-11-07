@@ -6,7 +6,7 @@ import StatusBadge from '@/Components/Ticketing/StatusBadge';
 import TicketRatingCard from '@/Components/Ticketing/TicketRatingCard';
 import ButtonLink from '@/Components/ui/ButtonLink';
 import Card from '@/Components/ui/Card';
-import Checkbox from '@/Components/ui/Checkbox';
+import ConfirmDialog from '@/Components/ui/ConfirmDialog';
 import Icon from '@/Components/ui/Icon';
 import InputError from '@/Components/ui/InputError';
 import PageHeader from '@/Components/ui/PageHeader';
@@ -15,7 +15,7 @@ import SecondaryButton from '@/Components/ui/SecondaryButton';
 import Select from '@/Components/ui/Select';
 import TextArea from '@/Components/ui/TextArea';
 import AppLayout from '@/Layouts/AppLayout';
-import { formatRelative } from '@/lib/formatDate';
+import { formatDateTime, formatRelative } from '@/lib/formatDate';
 import { formSubmitOptions } from '@/lib/formSubmitOptions';
 import { AttachmentLimits, Option, PageProps, Ticket, TicketPriorityValue, TicketStatusValue } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
@@ -23,6 +23,12 @@ import { FormEventHandler, useState } from 'react';
 import AssignmentCard from './Partials/AssignmentCard';
 import PriorityCard from './Partials/PriorityCard';
 import TransferCard from './Partials/TransferCard';
+
+/**
+ * The dialog gives focus back when its closing animation ends; the reply box
+ * takes it right after, so the agent can start typing.
+ */
+const FOCUS_AFTER_DIALOG_MS = 300;
 
 interface CannedResponse {
     id: number;
@@ -50,7 +56,6 @@ export default function Show({
     can: {
         take: boolean;
         respond: boolean;
-        addInternalNote: boolean;
         changeStatus: boolean;
         changePriority: boolean;
         assign: boolean;
@@ -58,9 +63,29 @@ export default function Show({
     };
 }) {
     const { auth, errors } = usePage<PageProps & { errors: Record<string, string> }>().props;
-    const message = useForm({ body: '', is_internal: !can.respond, attachments: [] as File[] });
+    const message = useForm({ body: '', attachments: [] as File[] });
     const [status, setStatus] = useState<TicketStatusValue>(ticket.status.value);
-    const canWrite = can.respond || can.addInternalNote;
+    const [isTakeDialogOpen, setIsTakeDialogOpen] = useState(false);
+    const [isTaking, setIsTaking] = useState(false);
+
+    /**
+     * Take the ticket from whoever the agent sees on the screen. If it changed
+     * hands meanwhile, the server refuses and the page shows who has it now.
+     */
+    const takeTicket = () => {
+        router.post(route('desk.tickets.take', ticket.id), { assignee_id: ticket.assignee?.id ?? null }, {
+            preserveScroll: true,
+            onStart: () => setIsTaking(true),
+            onSuccess: () => {
+                setIsTakeDialogOpen(false);
+                window.setTimeout(() => document.getElementById('body')?.focus(), FOCUS_AFTER_DIALOG_MS);
+            },
+            onFinish: () => {
+                setIsTaking(false);
+                setIsTakeDialogOpen(false);
+            },
+        });
+    };
 
     const sendMessage: FormEventHandler = (e) => {
         e.preventDefault();
@@ -73,6 +98,9 @@ export default function Show({
     const deadlines: Array<[string, string]> = [
         ['Creado', formatRelative(ticket.created_at)],
         ['Primera respuesta', ticket.first_responded_at ? `Respondido ${formatRelative(ticket.first_responded_at)}` : 'Pendiente'],
+        ...(ticket.closed_at
+            ? [['Cerrado', `${ticket.closed_by?.name ?? 'Sistema'} · ${formatDateTime(ticket.closed_at)}`] as [string, string]]
+            : []),
     ];
 
     return (
@@ -99,9 +127,9 @@ export default function Show({
                     <h2 id="conversation-heading" className="mb-4 text-xl font-extrabold">Conversación</h2>
                     <Conversation messages={ticket.messages ?? []} viewerId={auth.user.id} />
 
-                    {canWrite && (
+                    {can.respond && (
                         <form onSubmit={sendMessage} noValidate className="mt-6 border-t border-line pt-5">
-                            {message.data.is_internal ? null : cannedResponses.length > 0 && (
+                            {cannedResponses.length > 0 && (
                                 <div role="group" aria-label="Respuestas rápidas" className="mb-3 flex flex-wrap gap-1.5">
                                     {cannedResponses.map((response) => (
                                         <button
@@ -118,14 +146,13 @@ export default function Show({
                             )}
 
                             <label htmlFor="body" className="mb-1.5 block text-sm font-extrabold">
-                                {message.data.is_internal ? 'Nota interna (solo la ve TI)' : 'Respuesta al solicitante'}
+                                Respuesta al solicitante
                             </label>
                             <TextArea
                                 id="body"
                                 rows={4}
                                 value={message.data.body}
                                 aria-invalid={message.errors.body ? true : undefined}
-                                className={message.data.is_internal ? 'border-dashed border-[#b88a1c] bg-[#fff7e0]' : ''}
                                 onChange={(e) => message.setData('body', e.target.value)}
                             />
                             <InputError message={message.errors.body} />
@@ -139,36 +166,39 @@ export default function Show({
                                 />
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-3">
-                                {can.respond && can.addInternalNote && (
-                                    <label className="flex items-center gap-2.5 font-bold">
-                                        <Checkbox
-                                            checked={message.data.is_internal}
-                                            onChange={(e) => message.setData('is_internal', e.target.checked)}
-                                        />
-                                        Nota interna
-                                    </label>
-                                )}
-                                <PrimaryButton className="ms-auto" disabled={message.processing}>
-                                    {message.data.is_internal ? 'Guardar nota' : 'Enviar respuesta'}
-                                </PrimaryButton>
+                            <div className="mt-3 flex justify-end">
+                                <PrimaryButton disabled={message.processing}>Enviar respuesta</PrimaryButton>
                             </div>
                         </form>
+                    )}
+
+                    {!can.respond && can.take && (
+                        <div className="mt-6 border-t border-line pt-5">
+                            <p id="locked-composer-label" className="mb-1.5 text-sm font-extrabold">Respuesta al solicitante</p>
+                            <button
+                                type="button"
+                                aria-describedby="locked-composer-label"
+                                onClick={() => setIsTakeDialogOpen(true)}
+                                className="flex min-h-24 w-full items-start gap-2 rounded-2xl border-[1.5px] border-dashed border-field bg-white/60 px-4 py-3 text-left font-semibold text-muted transition hover:border-crimson hover:text-ink"
+                            >
+                                <Icon name="lock" size={18} className="mt-0.5 shrink-0" />
+                                {ticket.assignee
+                                    ? `Solo lectura: lo atiende ${ticket.assignee.name}. Toma el ticket para escribir.`
+                                    : 'Solo lectura: toma el ticket para escribir.'}
+                            </button>
+                            <InputError message={errors.ticket} />
+                        </div>
                     )}
                 </Card>
 
                 <div className="flex flex-col gap-5">
-                    {can.take && (
+                    {can.take && !ticket.assignee && (
                         <Card className="border-l-[6px] border-l-crimson">
                             <h2 className="text-lg font-extrabold">Nadie lo ha tomado</h2>
                             <p className="mb-3 text-sm text-muted">
                                 Al tomarlo, el solicitante recibe el saludo de tu equipo con tu nombre.
                             </p>
-                            <PrimaryButton
-                                type="button"
-                                className="w-full"
-                                onClick={() => router.post(route('desk.tickets.take', ticket.id), {}, { preserveScroll: true })}
-                            >
+                            <PrimaryButton type="button" className="w-full" disabled={isTaking} onClick={takeTicket}>
                                 <Icon name="check" />
                                 Tomar ticket
                             </PrimaryButton>
@@ -241,6 +271,20 @@ export default function Show({
                     </Card>
                 </div>
             </div>
+
+            <ConfirmDialog
+                show={isTakeDialogOpen}
+                title="¿Quieres tomar este ticket?"
+                confirmLabel="Sí, tomar ticket"
+                cancelLabel="No, solo mirar"
+                processing={isTaking}
+                onConfirm={takeTicket}
+                onClose={() => setIsTakeDialogOpen(false)}
+            >
+                {ticket.assignee
+                    ? `Ahora lo atiende ${ticket.assignee.name}. Si lo tomas, quedará a tu nombre y podrás escribir en el chat.`
+                    : 'Quedará asignado a ti, el solicitante recibirá el saludo de tu equipo y podrás escribir en el chat.'}
+            </ConfirmDialog>
         </AppLayout>
     );
 }

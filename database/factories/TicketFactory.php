@@ -32,7 +32,7 @@ class TicketFactory extends Factory
             'assignee_id' => null,
             'business_calendar_id' => fn (): int => BusinessCalendar::factory()->withOfficeHours()->create()->id,
             'type' => TicketType::Incident,
-            'status' => TicketStatus::New,
+            'status' => TicketStatus::Received,
             'priority' => TicketPriority::Medium,
             'channel' => TicketChannel::Portal,
             'subject' => fake()->sentence(6),
@@ -60,6 +60,18 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes): array => [
             'status' => TicketStatus::WaitingOnRequester,
             'sla_paused_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the ticket is finished.
+     */
+    public function closed(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => TicketStatus::Closed,
+            'resolved_at' => now(),
+            'closed_at' => now(),
         ]);
     }
 

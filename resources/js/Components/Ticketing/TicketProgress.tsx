@@ -8,10 +8,9 @@ const steps = ['Recibido', 'En proceso', 'Tu respuesta', 'Resuelto'];
  */
 function currentStep(status: TicketStatusValue): number {
     switch (status) {
-        case 'new':
+        case 'received':
             return 0;
         case 'in_progress':
-        case 'waiting_on_third_party':
             return 1;
         case 'waiting_on_requester':
             return 2;

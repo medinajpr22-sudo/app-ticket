@@ -3,69 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Identity\Enums\PermissionSlug;
-use App\Domain\Identity\Models\User;
-use App\Domain\Organization\Models\Team;
-use App\Domain\Ticketing\Models\Ticket;
-use App\Domain\Ticketing\Models\TicketRating;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class HomeController extends Controller
 {
     /**
-     * Send each person to where they work. People who configure the
-     * platform get an overview of it instead.
+     * Send each person to where they work. Those who oversee the whole help
+     * desk get its statistics; IT staff get the inbox of their teams; everyone
+     * else follows their own tickets.
      */
-    public function __invoke(Request $request): Response|RedirectResponse
+    public function __invoke(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        if ($user->can(PermissionSlug::ManageUsers->value)) {
-            return Inertia::render('Dashboard', [
-                'stats' => [
-                    'open_tickets' => Ticket::query()->open()->count(),
-                    'unassigned_tickets' => Ticket::query()->open()->whereNull('assignee_id')->count(),
-                    'overdue_tickets' => $this->overdueTickets()->count(),
-                    'satisfaction' => $this->recentSatisfaction(),
-                    'active_users' => User::query()->active()->count(),
-                    'staff' => User::query()->staff()->active()->count(),
-                    'teams' => Team::query()->active()->count(),
-                ],
-            ]);
+        if ($user->can(PermissionSlug::ViewReports->value) && $user->can(PermissionSlug::ViewAllTickets->value)) {
+            return to_route('reports.overview');
         }
 
-        if ($user->can(PermissionSlug::ViewTeamTickets->value)) {
+        if ($user->can(PermissionSlug::ViewTeamTickets->value) && $user->teams()->exists()) {
             return to_route('desk.tickets.index');
         }
 
         return to_route('portal.tickets.index');
-    }
-
-    /**
-     * Average rating of the last 30 days, or null when nobody rated yet.
-     */
-    private function recentSatisfaction(): ?float
-    {
-        $average = TicketRating::query()->where('created_at', '>=', now()->subDays(30))->avg('score');
-
-        return $average === null ? null : round((float) $average, 1);
-    }
-
-    /**
-     * Open tickets past the deadline that applies to them right now.
-     *
-     * @return Builder<Ticket>
-     */
-    private function overdueTickets(): Builder
-    {
-        return Ticket::query()
-            ->open()
-            ->whereNull('sla_paused_at')
-            ->where(fn (Builder $query) => $query
-                ->where(fn (Builder $query) => $query->whereNull('first_responded_at')->where('first_response_due_at', '<', now()))
-                ->orWhere('resolution_due_at', '<', now()));
     }
 }

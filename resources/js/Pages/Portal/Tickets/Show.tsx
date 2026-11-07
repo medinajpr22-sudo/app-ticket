@@ -9,24 +9,23 @@ import FormField from '@/Components/ui/FormField';
 import Icon from '@/Components/ui/Icon';
 import PageHeader from '@/Components/ui/PageHeader';
 import PrimaryButton from '@/Components/ui/PrimaryButton';
-import SecondaryButton from '@/Components/ui/SecondaryButton';
 import TextArea from '@/Components/ui/TextArea';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatRelative } from '@/lib/formatDate';
 import { formSubmitOptions } from '@/lib/formSubmitOptions';
 import { AttachmentLimits, PageProps, Ticket } from '@/types';
-import { router, useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import TicketClosureCard, { TicketClosureAbilities } from './Partials/TicketClosureCard';
 
 /**
  * What happens next, in plain words for the requester.
  */
 function nextStep(ticket: Ticket): { title: string; text: string } | null {
     switch (ticket.status.value) {
-        case 'new':
+        case 'received':
             return { title: 'Recibimos tu ticket', text: 'Una persona de TI lo tomará pronto.' };
         case 'in_progress':
-        case 'waiting_on_third_party':
             return {
                 title: `${ticket.assignee?.name ?? 'Un agente'} está trabajando en tu caso`,
                 text: 'Te avisaremos apenas haya novedades.',
@@ -45,7 +44,7 @@ export default function Show({
 }: {
     ticket: Ticket;
     attachmentLimits: AttachmentLimits;
-    can: { reply: boolean; resolve: boolean; reopen: boolean; rate: boolean };
+    can: TicketClosureAbilities & { reply: boolean; rate: boolean };
 }) {
     const { auth } = usePage<PageProps>().props;
     const form = useForm({ body: '', attachments: [] as File[] });
@@ -117,6 +116,8 @@ export default function Show({
                 </Card>
 
                 <div className="flex flex-col gap-5">
+                    <TicketClosureCard ticket={ticket} can={can} />
+
                     {(can.rate || ticket.rating) && <TicketRatingCard ticket={ticket} canRate={can.rate} />}
 
                     <Card aria-labelledby="details-heading">
@@ -136,32 +137,6 @@ export default function Show({
                         </dl>
                     </Card>
 
-                    {can.resolve && (
-                        <Card>
-                            <h2 className="text-lg font-extrabold">¿Ya se resolvió?</h2>
-                            <p className="mb-3 text-sm text-muted">Si ya no necesitas ayuda, puedes cerrarlo tú.</p>
-                            <SecondaryButton
-                                size="sm"
-                                onClick={() => router.post(route('portal.tickets.resolution.store', ticket.id), {}, { preserveScroll: true })}
-                            >
-                                <Icon name="check" size={16} />
-                                Marcar como resuelto
-                            </SecondaryButton>
-                        </Card>
-                    )}
-
-                    {can.reopen && (
-                        <Card>
-                            <h2 className="text-lg font-extrabold">¿El problema volvió?</h2>
-                            <p className="mb-3 text-sm text-muted">Reábrelo y vuelve a quien lo atendió.</p>
-                            <SecondaryButton
-                                size="sm"
-                                onClick={() => router.delete(route('portal.tickets.resolution.destroy', ticket.id), { preserveScroll: true })}
-                            >
-                                Reabrir ticket
-                            </SecondaryButton>
-                        </Card>
-                    )}
                 </div>
             </div>
         </AppLayout>

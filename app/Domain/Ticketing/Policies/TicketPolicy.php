@@ -23,14 +23,31 @@ class TicketPolicy
         return $this->view($user, $ticket) && $this->acceptsMessages($ticket);
     }
 
-    public function resolve(User $user, Ticket $ticket): bool
+    /**
+     * The requester no longer needs help, whether IT already proposed a
+     * solution or not, and closes the ticket themselves.
+     */
+    public function close(User $user, Ticket $ticket): bool
     {
-        return $this->view($user, $ticket) && $ticket->status->isOpen();
+        return $this->view($user, $ticket) && $this->acceptsMessages($ticket);
     }
 
     public function reopen(User $user, Ticket $ticket): bool
     {
         return $this->view($user, $ticket) && $ticket->status === TicketStatus::Resolved;
+    }
+
+    /**
+     * Take the ticket off the requester's list. It stays in the desk as it is.
+     */
+    public function archive(User $user, Ticket $ticket): bool
+    {
+        return $this->view($user, $ticket) && $ticket->requester_archived_at === null;
+    }
+
+    public function unarchive(User $user, Ticket $ticket): bool
+    {
+        return $this->view($user, $ticket) && $ticket->requester_archived_at !== null;
     }
 
     /**
@@ -49,36 +66,40 @@ class TicketPolicy
             || ($user->hasPermission(PermissionSlug::ViewTeamTickets) && $user->belongsToTeam($ticket->team_id));
     }
 
+    /**
+     * Become the person responsible for the ticket: when nobody has it, or
+     * when a colleague has it and the agent confirms taking it from them.
+     */
     public function take(User $user, Ticket $ticket): bool
     {
         return $user->hasPermission(PermissionSlug::TakeTickets)
             && $user->belongsToTeam($ticket->team_id)
-            && $ticket->status === TicketStatus::New
-            && $ticket->assignee_id === null;
+            && $ticket->assignee_id !== $user->id
+            && $this->acceptsMessages($ticket);
     }
 
     /**
-     * Answering the requester requires taking the ticket first, so an answered
-     * ticket always has someone responsible for it. Internal notes do not.
+     * Only the agent who has the ticket writes in it, so every answer has
+     * someone responsible behind it. Everyone else takes the ticket first.
      */
     public function respond(User $user, Ticket $ticket): bool
     {
         return $user->hasPermission(PermissionSlug::ReplyToTickets)
             && $user->belongsToTeam($ticket->team_id)
-            && $ticket->status !== TicketStatus::New
+            && $ticket->assignee_id === $user->id
             && $this->acceptsMessages($ticket);
     }
 
-    public function addInternalNote(User $user, Ticket $ticket): bool
-    {
-        return $user->hasPermission(PermissionSlug::AddInternalNotes) && $user->belongsToTeam($ticket->team_id);
-    }
-
+    /**
+     * A received ticket is taken before anything else happens to it, so its
+     * status always reflects someone's work.
+     */
     public function changeStatus(User $user, Ticket $ticket): bool
     {
         return $user->hasPermission(PermissionSlug::ChangeTicketStatus)
             && $user->belongsToTeam($ticket->team_id)
-            && $ticket->status !== TicketStatus::Closed;
+            && $ticket->assignee_id !== null
+            && $this->acceptsMessages($ticket);
     }
 
     /**
@@ -107,10 +128,10 @@ class TicketPolicy
     }
 
     /**
-     * Closed and cancelled tickets keep their conversation as it was.
+     * Closed tickets keep their conversation as it was.
      */
     private function acceptsMessages(Ticket $ticket): bool
     {
-        return ! in_array($ticket->status, [TicketStatus::Closed, TicketStatus::Cancelled], true);
+        return $ticket->status !== TicketStatus::Closed && ! $ticket->status->isRetired();
     }
 }
