@@ -213,6 +213,13 @@ return [
         'purpose' => 'uso',
         'body' => 'mensaje',
         'permissions' => 'permisos',
+        'attachments' => 'adjuntos',
+        'attachments.*' => 'adjunto',
+        'reason' => 'motivo',
+        'assignee_id' => 'agente',
+        'priority' => 'prioridad',
+        'score' => 'calificación',
+        'comment' => 'comentario',
     ],
 
 ];

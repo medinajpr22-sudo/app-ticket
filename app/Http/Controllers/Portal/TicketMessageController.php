@@ -18,7 +18,12 @@ class TicketMessageController extends Controller
     {
         Gate::authorize('reply', $ticket);
 
-        $replyToTicket->handle($ticket, $request->user(), $request->validated('body'));
+        $replyToTicket->handle(
+            $ticket,
+            $request->user(),
+            $request->validated('body'),
+            attachments: $request->validated('attachments', []),
+        );
 
         return to_route('portal.tickets.show', $ticket)->with('success', __('Message sent.'));
     }

@@ -6,9 +6,11 @@ use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
 use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
+use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Models\MessageTemplate;
 use App\Domain\Ticketing\Models\Ticket;
+use App\Domain\Ticketing\Models\TicketAttachment;
 use App\Domain\Ticketing\Services\MessageTemplateRenderer;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TicketResource;
@@ -89,8 +91,12 @@ class TicketController extends Controller
             'category',
             'businessCalendar.hours',
             'businessCalendar.holidays',
-            'messages' => fn ($query) => $query->with('author')->oldest()->orderBy('id'),
+            'rating',
+            'messages' => fn ($query) => $query->with(['author', 'attachments'])->oldest()->orderBy('id'),
         ]);
+
+        $teamMembers = $ticket->team->members()->where('is_active', true)->orderBy('name')->get();
+        $otherTeams = Team::query()->active()->whereKeyNot($ticket->team_id)->orderBy('name')->get();
 
         $cannedResponses = MessageTemplate::query()
             ->where('purpose', MessageTemplatePurpose::CannedResponse)
@@ -110,11 +116,18 @@ class TicketController extends Controller
                 'value' => $status->value,
                 'label' => $status->label(),
             ], TicketStatus::agentChoices()),
+            'priorityOptions' => TicketPriority::options(),
+            'teamMembers' => $teamMembers->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])->all(),
+            'otherTeams' => $otherTeams->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])->all(),
+            'attachmentLimits' => TicketAttachment::limits(),
             'can' => [
                 'take' => Gate::allows('take', $ticket),
                 'respond' => Gate::allows('respond', $ticket),
                 'addInternalNote' => Gate::allows('addInternalNote', $ticket),
                 'changeStatus' => Gate::allows('changeStatus', $ticket),
+                'changePriority' => Gate::allows('changePriority', $ticket),
+                'assign' => Gate::allows('assign', $ticket),
+                'transfer' => Gate::allows('transfer', $ticket),
             ],
         ]);
     }

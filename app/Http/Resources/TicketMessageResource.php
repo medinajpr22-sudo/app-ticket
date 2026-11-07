@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Domain\Ticketing\Models\TicketAttachment;
 use App\Domain\Ticketing\Models\TicketMessage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -28,6 +29,14 @@ class TicketMessageResource extends JsonResource
                 'name' => $this->author->name,
                 'initials' => $this->author->initials(),
             ] : null,
+            'attachments' => $this->whenLoaded('attachments', fn (): array => $this->attachments
+                ->map(fn (TicketAttachment $attachment): array => [
+                    'id' => $attachment->id,
+                    'name' => $attachment->original_name,
+                    'size_bytes' => $attachment->size_bytes,
+                    'url' => route('attachments.show', $attachment),
+                ])
+                ->all()),
         ];
     }
 }

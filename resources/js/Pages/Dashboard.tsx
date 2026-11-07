@@ -8,6 +8,7 @@ interface PlatformStats {
     open_tickets: number;
     unassigned_tickets: number;
     overdue_tickets: number;
+    satisfaction: number | null;
     active_users: number;
     staff: number;
     teams: number;
@@ -37,11 +38,15 @@ export default function Dashboard({ stats }: { stats: PlatformStats }) {
     const { auth } = usePage<PageProps>().props;
     const firstName = auth.user.name.split(' ')[0];
 
-    const tiles: Array<{ label: string; value: number; href: string }> = [
+    const tiles: Array<{ label: string; value: number | string; href: string }> = [
         { label: 'Tickets abiertos', value: stats.open_tickets, href: route('desk.tickets.index') },
         { label: 'Sin asignar', value: stats.unassigned_tickets, href: route('desk.tickets.index', { view: 'unassigned' }) },
         { label: 'Vencidos', value: stats.overdue_tickets, href: route('desk.tickets.index') },
-        { label: 'Personal de TI activo', value: stats.staff, href: route('management.users.index', { role: 'admin' }) },
+        {
+            label: 'Satisfacción (30 días)',
+            value: stats.satisfaction === null ? '—' : `${stats.satisfaction.toLocaleString('es')} / 5`,
+            href: route('desk.tickets.index', { status: 'resolved' }),
+        },
     ];
 
     return (
@@ -62,7 +67,7 @@ export default function Dashboard({ stats }: { stats: PlatformStats }) {
                             <span className={`block text-sm font-bold ${index === 0 ? 'text-blush' : 'text-muted'}`}>
                                 {tile.label}
                             </span>
-                            <span className={`block text-4xl font-extrabold ${index === 2 && tile.value > 0 ? 'text-crimson-dark' : ''}`}>
+                            <span className={`block text-4xl font-extrabold ${index === 2 && Number(tile.value) > 0 ? 'text-crimson-dark' : ''}`}>
                                 {tile.value}
                             </span>
                         </Link>
@@ -71,7 +76,7 @@ export default function Dashboard({ stats }: { stats: PlatformStats }) {
             </ul>
 
             <p className="mt-3 text-sm font-semibold text-muted">
-                {stats.active_users} cuentas activas · {stats.teams} equipos de TI
+                {stats.active_users} cuentas activas · {stats.staff} personas de TI · {stats.teams} equipos
             </p>
 
             <h2 className="mt-8 mb-3.5 text-xl font-extrabold">Accesos rápidos</h2>

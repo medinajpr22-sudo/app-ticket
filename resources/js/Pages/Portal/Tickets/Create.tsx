@@ -1,3 +1,4 @@
+import AttachmentInput from '@/Components/Ticketing/AttachmentInput';
 import Card from '@/Components/ui/Card';
 import FormField from '@/Components/ui/FormField';
 import Icon, { IconName } from '@/Components/ui/Icon';
@@ -12,7 +13,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { classNames } from '@/lib/classNames';
 import { formatDuration } from '@/lib/formatDuration';
 import { formSubmitOptions } from '@/lib/formSubmitOptions';
-import { TeamTypeValue, TicketPriorityValue } from '@/types';
+import { AttachmentLimits, TeamTypeValue, TicketPriorityValue } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
@@ -34,15 +35,18 @@ const urgencyLabels: Partial<Record<TicketPriorityValue, string>> = {
 export default function Create({
     categories,
     priorities,
+    attachmentLimits,
 }: {
     categories: CatalogCategory[];
     priorities: TicketPriorityValue[];
+    attachmentLimits: AttachmentLimits;
 }) {
     const form = useForm({
         category_id: '' as number | '',
         subject: '',
         description: '',
         priority: 'medium' as TicketPriorityValue,
+        attachments: [] as File[],
     });
     const { data, setData, errors, processing } = form;
 
@@ -169,6 +173,13 @@ export default function Create({
                                     onChange={(e) => setData('description', e.target.value)}
                                 />
                             </FormField>
+
+                            <AttachmentInput
+                                files={data.attachments}
+                                onChange={(files) => setData('attachments', files)}
+                                limits={attachmentLimits}
+                                error={Object.entries(errors).find(([field]) => field.startsWith('attachments'))?.[1]}
+                            />
 
                             <RadioCards
                                 name="priority"

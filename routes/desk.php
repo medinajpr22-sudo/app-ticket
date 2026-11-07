@@ -2,8 +2,10 @@
 
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Http\Controllers\Desk\TakeTicketController;
+use App\Http\Controllers\Desk\TicketAssignmentController;
 use App\Http\Controllers\Desk\TicketController;
 use App\Http\Controllers\Desk\TicketMessageController;
+use App\Http\Controllers\Desk\TicketPriorityController;
 use App\Http\Controllers\Desk\TicketStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,4 +28,7 @@ Route::middleware('auth')->prefix('desk')->name('desk.')->group(function () {
     Route::post('tickets/{ticket}/take', TakeTicketController::class)->name('tickets.take');
     Route::post('tickets/{ticket}/messages', [TicketMessageController::class, 'store'])->name('tickets.messages.store');
     Route::put('tickets/{ticket}/status', [TicketStatusController::class, 'update'])->name('tickets.status.update');
+    Route::put('tickets/{ticket}/priority', [TicketPriorityController::class, 'update'])->name('tickets.priority.update');
+    Route::put('tickets/{ticket}/assignment', [TicketAssignmentController::class, 'update'])->name('tickets.assignment.update');
+    Route::post('tickets/{ticket}/transfer', [TicketAssignmentController::class, 'transfer'])->name('tickets.transfer');
 });

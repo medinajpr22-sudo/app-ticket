@@ -20,7 +20,13 @@ class TicketMessageController extends Controller
 
         Gate::authorize($isInternalNote ? 'addInternalNote' : 'respond', $ticket);
 
-        $replyToTicket->handle($ticket, $request->user(), $request->validated('body'), $isInternalNote);
+        $replyToTicket->handle(
+            $ticket,
+            $request->user(),
+            $request->validated('body'),
+            $isInternalNote,
+            $request->validated('attachments', []),
+        );
 
         return to_route('desk.tickets.show', $ticket)
             ->with('success', $isInternalNote ? __('Internal note saved.') : __('Message sent.'));

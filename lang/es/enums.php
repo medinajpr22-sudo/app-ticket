@@ -24,6 +24,7 @@ return [
         'TakeTickets' => 'Tomar tickets',
         'AssignTickets' => 'Asignar y reasignar tickets',
         'ChangeTicketStatus' => 'Cambiar el estado de los tickets',
+        'ChangeTicketPriority' => 'Cambiar la prioridad de los tickets',
         'ViewReports' => 'Ver reportes',
         'ManageUsers' => 'Gestionar usuarios',
         'ManageTeams' => 'Gestionar equipos',

@@ -12,18 +12,22 @@ use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Events\TicketCreated;
 use App\Domain\Ticketing\Models\Ticket;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class CreateTicket
 {
-    public function __construct(private BusinessTimeCalculator $calculator) {}
+    public function __construct(
+        private BusinessTimeCalculator $calculator,
+        private StoreMessageAttachments $storeAttachments,
+    ) {}
 
     /**
      * Open a ticket from the portal. The category decides the team, the ticket
      * type and the SLA; the description becomes the first message.
      *
-     * @param  array{category_id: int, subject: string, description: string, priority: string}  $attributes
+     * @param  array{category_id: int, subject: string, description: string, priority: string, attachments?: list<UploadedFile>}  $attributes
      */
     public function handle(User $requester, array $attributes): Ticket
     {
@@ -52,11 +56,13 @@ class CreateTicket
                 'resolution_due_at' => $this->calculator->addMinutes($calendar, $now, $target->resolution_minutes),
             ]);
 
-            $ticket->messages()->create([
+            $description = $ticket->messages()->create([
                 'author_id' => $requester->id,
                 'type' => TicketMessageType::Reply,
                 'body' => $attributes['description'],
             ]);
+
+            $this->storeAttachments->handle($description, $attributes['attachments'] ?? []);
 
             $ticket->statusChanges()->create([
                 'user_id' => $requester->id,

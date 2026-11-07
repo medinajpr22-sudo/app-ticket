@@ -1,7 +1,9 @@
+import AttachmentInput from '@/Components/Ticketing/AttachmentInput';
 import Conversation from '@/Components/Ticketing/Conversation';
 import PriorityBadge from '@/Components/Ticketing/PriorityBadge';
 import SlaBadge from '@/Components/Ticketing/SlaBadge';
 import StatusBadge from '@/Components/Ticketing/StatusBadge';
+import TicketRatingCard from '@/Components/Ticketing/TicketRatingCard';
 import ButtonLink from '@/Components/ui/ButtonLink';
 import Card from '@/Components/ui/Card';
 import Checkbox from '@/Components/ui/Checkbox';
@@ -15,9 +17,12 @@ import TextArea from '@/Components/ui/TextArea';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatRelative } from '@/lib/formatDate';
 import { formSubmitOptions } from '@/lib/formSubmitOptions';
-import { Option, PageProps, Ticket, TicketStatusValue } from '@/types';
+import { AttachmentLimits, Option, PageProps, Ticket, TicketPriorityValue, TicketStatusValue } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import AssignmentCard from './Partials/AssignmentCard';
+import PriorityCard from './Partials/PriorityCard';
+import TransferCard from './Partials/TransferCard';
 
 interface CannedResponse {
     id: number;
@@ -29,15 +34,31 @@ export default function Show({
     ticket,
     cannedResponses,
     statusOptions,
+    priorityOptions,
+    teamMembers,
+    otherTeams,
+    attachmentLimits,
     can,
 }: {
     ticket: Ticket;
     cannedResponses: CannedResponse[];
     statusOptions: Option<TicketStatusValue>[];
-    can: { take: boolean; respond: boolean; addInternalNote: boolean; changeStatus: boolean };
+    priorityOptions: Option<TicketPriorityValue>[];
+    teamMembers: Array<{ id: number; name: string }>;
+    otherTeams: Array<{ id: number; name: string }>;
+    attachmentLimits: AttachmentLimits;
+    can: {
+        take: boolean;
+        respond: boolean;
+        addInternalNote: boolean;
+        changeStatus: boolean;
+        changePriority: boolean;
+        assign: boolean;
+        transfer: boolean;
+    };
 }) {
     const { auth, errors } = usePage<PageProps & { errors: Record<string, string> }>().props;
-    const message = useForm({ body: '', is_internal: !can.respond });
+    const message = useForm({ body: '', is_internal: !can.respond, attachments: [] as File[] });
     const [status, setStatus] = useState<TicketStatusValue>(ticket.status.value);
     const canWrite = can.respond || can.addInternalNote;
 
@@ -45,7 +66,7 @@ export default function Show({
         e.preventDefault();
         message.post(route('desk.tickets.messages.store', ticket.id), {
             ...formSubmitOptions,
-            onSuccess: () => message.reset('body'),
+            onSuccess: () => message.reset('body', 'attachments'),
         });
     };
 
@@ -108,6 +129,15 @@ export default function Show({
                                 onChange={(e) => message.setData('body', e.target.value)}
                             />
                             <InputError message={message.errors.body} />
+
+                            <div className="mt-3">
+                                <AttachmentInput
+                                    files={message.data.attachments}
+                                    onChange={(files) => message.setData('attachments', files)}
+                                    limits={attachmentLimits}
+                                    error={Object.entries(message.errors).find(([field]) => field.startsWith('attachments'))?.[1]}
+                                />
+                            </div>
 
                             <div className="mt-3 flex flex-wrap items-center gap-3">
                                 {can.respond && can.addInternalNote && (
@@ -174,6 +204,14 @@ export default function Show({
                             </SecondaryButton>
                         </Card>
                     )}
+
+                    {can.changePriority && <PriorityCard ticket={ticket} options={priorityOptions} />}
+
+                    {can.assign && <AssignmentCard ticket={ticket} members={teamMembers} />}
+
+                    {can.transfer && otherTeams.length > 0 && <TransferCard ticket={ticket} teams={otherTeams} />}
+
+                    {ticket.rating && <TicketRatingCard ticket={ticket} canRate={false} title="Calificación del solicitante" />}
 
                     <Card aria-labelledby="requester-heading">
                         <h2 id="requester-heading" className="mb-2 text-lg font-extrabold">Solicitante</h2>

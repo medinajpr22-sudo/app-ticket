@@ -13,6 +13,7 @@ use App\Domain\ServiceLevel\Models\SlaPolicy;
 use App\Domain\Shared\Enums\Icon;
 use App\Domain\Ticketing\Actions\ChangeTicketStatus;
 use App\Domain\Ticketing\Actions\CreateTicket;
+use App\Domain\Ticketing\Actions\RateTicket;
 use App\Domain\Ticketing\Actions\ReplyToTicket;
 use App\Domain\Ticketing\Actions\TakeTicket;
 use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
@@ -150,6 +151,7 @@ class DemoSeeder extends Seeder
         $takeTicket->handle($monitor, $ana);
         $reply->handle($monitor, $ana, 'Cambiamos el cable HDMI de tu puesto. ¿Puedes confirmar si ya funciona?');
         $changeStatus->handle($monitor->refresh(), TicketStatus::Resolved, $ana);
+        app(RateTicket::class)->handle($monitor, ['score' => 5, 'comment' => 'Muy rápido, gracias.']);
     }
 
     /**

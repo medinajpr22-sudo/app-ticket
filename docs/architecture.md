@@ -305,6 +305,18 @@ Flujo y reglas:
   pendientes se corren el tiempo laboral que estuvo en pausa. `TicketSlaTracker` indica si va en
   plazo, en riesgo (queda menos del 25 %), vencido, en pausa, cumplido o incumplido.
 - **Permisos:** `TicketPolicy`. El solicitante solo ve sus tickets; el agente, los de sus equipos.
+- **Adjuntos** (`ticket_attachments`, por mensaje): hasta 5 archivos de 10 MB, solo imágenes,
+  PDF, Office, CSV y texto. Se guardan en el disco privado y se descargan por
+  `attachments.show`, que revisa `TicketAttachmentPolicy`: los de notas internas son solo de TI.
+- **Reasignar** (`AssignTicket`): a otro integrante activo del equipo; deja nota interna. Si nadie
+  lo había tomado, se envía el saludo en nombre de esa persona.
+- **Transferir** (`TransferTicket`): a otro equipo con motivo obligatorio; vuelve a "Recibido",
+  sin responsable, y el solicitante recibe un aviso. Los vencimientos no cambian.
+- **Cambiar prioridad** (`ChangeTicketPriority`, permiso `tickets.change_priority`): recalcula
+  los vencimientos desde la creación con los tiempos de la nueva prioridad, más las pausas
+  terminadas que registra el historial de estados.
+- **Encuesta** (`ticket_ratings`, una por ticket): de 1 a 5 estrellas con comentario opcional,
+  cuando el ticket está resuelto o cerrado. El panel general muestra el promedio de 30 días.
 
 ### Ajustes frente a la propuesta inicial
 
@@ -315,5 +327,5 @@ Flujo y reglas:
 
 ### Próximas tablas
 
-Adjuntos, observadores y calificación de tickets, auditoría y SSO (`identity_providers`,
-`directory_groups`, `directory_group_team`).
+Observadores de tickets, auditoría y SSO (`identity_providers`, `directory_groups`,
+`directory_group_team`).

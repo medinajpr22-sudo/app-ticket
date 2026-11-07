@@ -9,6 +9,7 @@ use App\Domain\Ticketing\Actions\CreateTicket;
 use App\Domain\Ticketing\Enums\TicketPriority;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Models\Ticket;
+use App\Domain\Ticketing\Models\TicketAttachment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\StoreTicketRequest;
 use App\Http\Resources\TicketResource;
@@ -78,6 +79,7 @@ class TicketController extends Controller
                 'first_response_minutes' => ($category->slaPolicy ?? $defaultPolicy)?->targets
                     ->mapWithKeys(fn (SlaTarget $target): array => [$target->priority->value => $target->first_response_minutes]),
             ])->all(),
+            'attachmentLimits' => TicketAttachment::limits(),
             'priorities' => array_map(fn (TicketPriority $priority): string => $priority->value, [
                 TicketPriority::Low,
                 TicketPriority::Medium,
@@ -107,15 +109,18 @@ class TicketController extends Controller
             'team',
             'category',
             'assignee',
-            'messages' => fn ($query) => $query->visibleToRequester()->with('author')->oldest()->orderBy('id'),
+            'rating',
+            'messages' => fn ($query) => $query->visibleToRequester()->with(['author', 'attachments'])->oldest()->orderBy('id'),
         ]);
 
         return Inertia::render('Portal/Tickets/Show', [
             'ticket' => TicketResource::make($ticket),
+            'attachmentLimits' => TicketAttachment::limits(),
             'can' => [
                 'reply' => Gate::allows('reply', $ticket),
                 'resolve' => Gate::allows('resolve', $ticket),
                 'reopen' => Gate::allows('reopen', $ticket),
+                'rate' => Gate::allows('rate', $ticket),
             ],
         ]);
     }

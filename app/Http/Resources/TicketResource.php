@@ -53,6 +53,11 @@ class TicketResource extends JsonResource
                 ];
             }),
             'messages' => TicketMessageResource::collection($this->whenLoaded('messages')),
+            'rating' => $this->whenLoaded('rating', fn (): ?array => $this->rating ? [
+                'score' => $this->rating->score,
+                'comment' => $this->rating->comment,
+                'created_at' => $this->rating->created_at->toIso8601String(),
+            ] : null),
         ];
     }
 }

@@ -1,4 +1,6 @@
+import AttachmentInput from '@/Components/Ticketing/AttachmentInput';
 import Conversation from '@/Components/Ticketing/Conversation';
+import TicketRatingCard from '@/Components/Ticketing/TicketRatingCard';
 import StatusBadge from '@/Components/Ticketing/StatusBadge';
 import TicketProgress from '@/Components/Ticketing/TicketProgress';
 import ButtonLink from '@/Components/ui/ButtonLink';
@@ -12,7 +14,7 @@ import TextArea from '@/Components/ui/TextArea';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatRelative } from '@/lib/formatDate';
 import { formSubmitOptions } from '@/lib/formSubmitOptions';
-import { PageProps, Ticket } from '@/types';
+import { AttachmentLimits, PageProps, Ticket } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
@@ -38,13 +40,15 @@ function nextStep(ticket: Ticket): { title: string; text: string } | null {
 
 export default function Show({
     ticket,
+    attachmentLimits,
     can,
 }: {
     ticket: Ticket;
-    can: { reply: boolean; resolve: boolean; reopen: boolean };
+    attachmentLimits: AttachmentLimits;
+    can: { reply: boolean; resolve: boolean; reopen: boolean; rate: boolean };
 }) {
     const { auth } = usePage<PageProps>().props;
-    const form = useForm({ body: '' });
+    const form = useForm({ body: '', attachments: [] as File[] });
     const next = nextStep(ticket);
 
     const submit: FormEventHandler = (e) => {
@@ -99,7 +103,13 @@ export default function Show({
                                     onChange={(e) => form.setData('body', e.target.value)}
                                 />
                             </FormField>
-                            <div className="mt-3 flex justify-end">
+                            <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+                                <AttachmentInput
+                                    files={form.data.attachments}
+                                    onChange={(files) => form.setData('attachments', files)}
+                                    limits={attachmentLimits}
+                                    error={Object.entries(form.errors).find(([field]) => field.startsWith('attachments'))?.[1]}
+                                />
                                 <PrimaryButton disabled={form.processing}>Enviar</PrimaryButton>
                             </div>
                         </form>
@@ -107,6 +117,8 @@ export default function Show({
                 </Card>
 
                 <div className="flex flex-col gap-5">
+                    {(can.rate || ticket.rating) && <TicketRatingCard ticket={ticket} canRate={can.rate} />}
+
                     <Card aria-labelledby="details-heading">
                         <h2 id="details-heading" className="mb-2 text-xl font-extrabold">Detalles</h2>
                         <dl className="divide-y divide-line">

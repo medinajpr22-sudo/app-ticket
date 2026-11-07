@@ -3,6 +3,7 @@
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Http\Controllers\Portal\TicketController;
 use App\Http\Controllers\Portal\TicketMessageController;
+use App\Http\Controllers\Portal\TicketRatingController;
 use App\Http\Controllers\Portal\TicketResolutionController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,4 +30,5 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
     Route::post('tickets/{ticket}/messages', [TicketMessageController::class, 'store'])->name('tickets.messages.store');
     Route::post('tickets/{ticket}/resolution', [TicketResolutionController::class, 'store'])->name('tickets.resolution.store');
     Route::delete('tickets/{ticket}/resolution', [TicketResolutionController::class, 'destroy'])->name('tickets.resolution.destroy');
+    Route::post('tickets/{ticket}/rating', [TicketRatingController::class, 'store'])->name('tickets.rating.store');
 });

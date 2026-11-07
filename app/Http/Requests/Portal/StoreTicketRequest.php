@@ -5,6 +5,7 @@ namespace App\Http\Requests\Portal;
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Organization\Models\Team;
 use App\Domain\Ticketing\Enums\TicketPriority;
+use App\Http\Requests\Concerns\ValidatesAttachments;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class StoreTicketRequest extends FormRequest
 {
+    use ValidatesAttachments;
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -33,6 +36,7 @@ class StoreTicketRequest extends FormRequest
             'subject' => ['required', 'string', 'max:200'],
             'description' => ['required', 'string', 'max:5000'],
             'priority' => ['required', Rule::enum(TicketPriority::class)->except([TicketPriority::Critical])],
+            ...$this->attachmentRules(),
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Models\User;
 use App\Domain\Organization\Models\Team;
 use App\Domain\Ticketing\Models\Ticket;
+use App\Domain\Ticketing\Models\TicketRating;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class HomeController extends Controller
                     'open_tickets' => Ticket::query()->open()->count(),
                     'unassigned_tickets' => Ticket::query()->open()->whereNull('assignee_id')->count(),
                     'overdue_tickets' => $this->overdueTickets()->count(),
+                    'satisfaction' => $this->recentSatisfaction(),
                     'active_users' => User::query()->active()->count(),
                     'staff' => User::query()->staff()->active()->count(),
                     'teams' => Team::query()->active()->count(),
@@ -40,6 +42,16 @@ class HomeController extends Controller
         }
 
         return to_route('portal.tickets.index');
+    }
+
+    /**
+     * Average rating of the last 30 days, or null when nobody rated yet.
+     */
+    private function recentSatisfaction(): ?float
+    {
+        $average = TicketRating::query()->where('created_at', '>=', now()->subDays(30))->avg('score');
+
+        return $average === null ? null : round((float) $average, 1);
     }
 
     /**

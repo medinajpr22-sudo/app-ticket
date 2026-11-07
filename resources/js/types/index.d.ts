@@ -176,12 +176,32 @@ export type SlaStateValue = 'on_track' | 'at_risk' | 'breached' | 'paused' | 'me
 
 export type TicketMessageTypeValue = 'reply' | 'internal_note' | 'automated';
 
+export interface TicketAttachment {
+    id: number;
+    name: string;
+    size_bytes: number;
+    url: string;
+}
+
+export interface AttachmentLimits {
+    max_files: number;
+    max_kilobytes: number;
+    extensions: string[];
+}
+
 export interface TicketMessage {
     id: number;
     type: TicketMessageTypeValue;
     body: string;
     created_at: string;
     author: { id: number; name: string; initials: string } | null;
+    attachments?: TicketAttachment[];
+}
+
+export interface TicketRating {
+    score: number;
+    comment: string | null;
+    created_at: string;
 }
 
 export interface TicketSla {
@@ -208,6 +228,7 @@ export interface Ticket {
     category?: { id: number; name: string; icon: IconName };
     sla?: TicketSla;
     messages?: TicketMessage[];
+    rating?: TicketRating | null;
 }
 
 export interface PaginationLink {

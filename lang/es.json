@@ -43,5 +43,16 @@
     "Status updated.": "Estado actualizado.",
     "Ticket marked as resolved.": "Marcaste el ticket como resuelto.",
     "Ticket reopened.": "Reabriste el ticket.",
-    "Choose a category you can request.": "Elige una categoría disponible."
+    "Choose a category you can request.": "Elige una categoría disponible.",
+    "Assigned to :name.": "Asignado a :name.",
+    "Reason: :reason": "Motivo: :reason",
+    "Transferred from :from to :to.": "Transferido de :from a :to.",
+    "Your request was transferred to the :team team, who will continue with it.": "Tu solicitud pasó al equipo :team, que continuará con ella.",
+    "Choose an active member of this team.": "Elige a un integrante activo de este equipo.",
+    "The ticket is already with that team.": "El ticket ya está en ese equipo.",
+    "Ticket reassigned.": "Ticket reasignado.",
+    "Ticket transferred.": "Ticket transferido.",
+    "Priority changed from :from to :to.": "Prioridad cambiada de :from a :to.",
+    "Priority updated.": "Prioridad actualizada.",
+    "Thanks for your rating.": "Gracias por tu calificación."
 }

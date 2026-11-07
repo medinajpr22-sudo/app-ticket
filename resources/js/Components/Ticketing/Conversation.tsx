@@ -1,6 +1,7 @@
 import Avatar from '@/Components/ui/Avatar';
 import Icon from '@/Components/ui/Icon';
 import { classNames } from '@/lib/classNames';
+import { formatFileSize } from '@/lib/formatFileSize';
 import { formatRelative } from '@/lib/formatDate';
 import { TicketMessage } from '@/types';
 
@@ -43,6 +44,25 @@ export default function Conversation({ messages, viewerId }: { messages: TicketM
                                 </p>
                             )}
                             <p className="whitespace-pre-line">{message.body}</p>
+                            {message.attachments && message.attachments.length > 0 && (
+                                <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Archivos adjuntos">
+                                    {message.attachments.map((attachment) => (
+                                        <li key={attachment.id}>
+                                            <a
+                                                href={attachment.url}
+                                                className={classNames(
+                                                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold underline-offset-2 hover:underline',
+                                                    !isNote && isMine ? 'border-white/40 text-white' : 'border-line bg-white/80 text-wine',
+                                                )}
+                                            >
+                                                <Icon name="clip" size={14} />
+                                                {attachment.name}
+                                                <span className="font-semibold opacity-80">{formatFileSize(attachment.size_bytes)}</span>
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                             <p
                                 className={classNames(
                                     'mt-1 text-xs font-bold',

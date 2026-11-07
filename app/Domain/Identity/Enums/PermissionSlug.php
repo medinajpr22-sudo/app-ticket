@@ -17,6 +17,7 @@ enum PermissionSlug: string
     case TakeTickets = 'tickets.take';
     case AssignTickets = 'tickets.assign';
     case ChangeTicketStatus = 'tickets.change_status';
+    case ChangeTicketPriority = 'tickets.change_priority';
     case ViewReports = 'reports.view';
     case ManageUsers = 'users.manage';
     case ManageTeams = 'teams.manage';
@@ -63,6 +64,7 @@ enum PermissionSlug: string
                 self::TakeTickets,
                 self::AssignTickets,
                 self::ChangeTicketStatus,
+                self::ChangeTicketPriority,
                 self::ViewReports,
             ],
             RoleSlug::User => [

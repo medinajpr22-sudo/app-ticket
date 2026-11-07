@@ -33,6 +33,16 @@ class TicketPolicy
         return $this->view($user, $ticket) && $ticket->status === TicketStatus::Resolved;
     }
 
+    /**
+     * One rating per ticket, once IT finished working on it.
+     */
+    public function rate(User $user, Ticket $ticket): bool
+    {
+        return $this->view($user, $ticket)
+            && in_array($ticket->status, [TicketStatus::Resolved, TicketStatus::Closed], true)
+            && $ticket->rating()->doesntExist();
+    }
+
     public function viewInDesk(User $user, Ticket $ticket): bool
     {
         return $user->hasPermission(PermissionSlug::ViewAllTickets)
@@ -69,6 +79,31 @@ class TicketPolicy
         return $user->hasPermission(PermissionSlug::ChangeTicketStatus)
             && $user->belongsToTeam($ticket->team_id)
             && $ticket->status !== TicketStatus::Closed;
+    }
+
+    /**
+     * Hand an open ticket to another agent of its team.
+     */
+    public function assign(User $user, Ticket $ticket): bool
+    {
+        return $user->hasPermission(PermissionSlug::AssignTickets)
+            && $user->belongsToTeam($ticket->team_id)
+            && $ticket->status->isOpen();
+    }
+
+    /**
+     * Send an open ticket to another team.
+     */
+    public function transfer(User $user, Ticket $ticket): bool
+    {
+        return $this->assign($user, $ticket);
+    }
+
+    public function changePriority(User $user, Ticket $ticket): bool
+    {
+        return $user->hasPermission(PermissionSlug::ChangeTicketPriority)
+            && $user->belongsToTeam($ticket->team_id)
+            && $ticket->status->isOpen();
     }
 
     /**
