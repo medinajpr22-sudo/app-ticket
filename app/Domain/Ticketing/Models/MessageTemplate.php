@@ -45,6 +45,20 @@ class MessageTemplate extends Model
     }
 
     /**
+     * The active template a team uses for an automatic message: its own if it
+     * has one, otherwise the general one. Null when neither exists.
+     */
+    public static function resolveFor(MessageTemplatePurpose $purpose, Team $team): ?self
+    {
+        return static::query()
+            ->where('purpose', $purpose)
+            ->where('is_active', true)
+            ->where(fn ($query) => $query->where('team_id', $team->id)->orWhereNull('team_id'))
+            ->orderByRaw('team_id is null')
+            ->first();
+    }
+
+    /**
      * @return BelongsTo<Team, $this>
      */
     public function team(): BelongsTo

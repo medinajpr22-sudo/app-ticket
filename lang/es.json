@@ -30,5 +30,18 @@
     "all teams": "todos los equipos",
     "Permissions updated.": "Permisos actualizados.",
     "Only the super admin can have these permissions: :permissions.": "Solo el super administrador puede tener estos permisos: :permissions.",
-    "Only a super admin can assign this role.": "Solo un super administrador puede asignar este rol."
+    "Only a super admin can assign this role.": "Solo un super administrador puede asignar este rol.",
+    "Good morning": "Buenos días",
+    "Good afternoon": "Buenas tardes",
+    "Good evening": "Buenas noches",
+    ":name already took this ticket.": ":name ya tomó este ticket.",
+    "This ticket can no longer be taken.": "Este ticket ya no se puede tomar.",
+    "Ticket created.": "Ticket creado. Te avisaremos de cada avance.",
+    "Message sent.": "Mensaje enviado.",
+    "Internal note saved.": "Nota interna guardada.",
+    "Ticket taken.": "Tomaste el ticket.",
+    "Status updated.": "Estado actualizado.",
+    "Ticket marked as resolved.": "Marcaste el ticket como resuelto.",
+    "Ticket reopened.": "Reabriste el ticket.",
+    "Choose a category you can request.": "Elige una categoría disponible."
 }

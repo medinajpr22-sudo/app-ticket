@@ -3,7 +3,7 @@ import { IconName } from '@/Components/ui/Icon';
 export interface NavigationItem {
     label: string;
     routeName: string;
-    activePattern: string;
+    activePatterns: string[];
     icon: IconName;
     permission?: string;
 }
@@ -22,10 +22,42 @@ export const navigation: NavigationSection[] = [
         label: 'General',
         items: [
             {
-                label: 'Inicio',
+                label: 'Panel general',
                 routeName: 'dashboard',
-                activePattern: 'dashboard',
+                activePatterns: ['dashboard'],
                 icon: 'home',
+                permission: 'users.manage',
+            },
+        ],
+    },
+    {
+        label: 'Soporte',
+        items: [
+            {
+                label: 'Mis tickets',
+                routeName: 'portal.tickets.index',
+                activePatterns: ['portal.tickets.index', 'portal.tickets.show'],
+                icon: 'ticket',
+                permission: 'tickets.view_own',
+            },
+            {
+                label: 'Nuevo ticket',
+                routeName: 'portal.tickets.create',
+                activePatterns: ['portal.tickets.create'],
+                icon: 'plus',
+                permission: 'tickets.create',
+            },
+        ],
+    },
+    {
+        label: 'Equipo de TI',
+        items: [
+            {
+                label: 'Bandeja',
+                routeName: 'desk.tickets.index',
+                activePatterns: ['desk.tickets.*'],
+                icon: 'inbox',
+                permission: 'tickets.view_team',
             },
         ],
     },
@@ -35,42 +67,42 @@ export const navigation: NavigationSection[] = [
             {
                 label: 'Usuarios',
                 routeName: 'management.users.index',
-                activePattern: 'management.users.*',
+                activePatterns: ['management.users.*'],
                 icon: 'user',
                 permission: 'users.manage',
             },
             {
                 label: 'Equipos',
                 routeName: 'management.teams.index',
-                activePattern: 'management.teams.*',
+                activePatterns: ['management.teams.*'],
                 icon: 'users',
                 permission: 'teams.manage',
             },
             {
                 label: 'Categorías',
                 routeName: 'management.categories.index',
-                activePattern: 'management.categories.*',
+                activePatterns: ['management.categories.*'],
                 icon: 'tag',
                 permission: 'categories.manage',
             },
             {
                 label: 'SLA y horarios',
                 routeName: 'management.service-levels.index',
-                activePattern: 'management.service-levels.*',
+                activePatterns: ['management.service-levels.*'],
                 icon: 'clock',
                 permission: 'sla_policies.manage',
             },
             {
                 label: 'Plantillas',
                 routeName: 'management.message-templates.index',
-                activePattern: 'management.message-templates.*',
+                activePatterns: ['management.message-templates.*'],
                 icon: 'mail',
                 permission: 'message_templates.manage',
             },
             {
                 label: 'Roles y permisos',
                 routeName: 'management.roles.index',
-                activePattern: 'management.roles.*',
+                activePatterns: ['management.roles.*'],
                 icon: 'shield',
                 permission: 'roles.manage',
             },

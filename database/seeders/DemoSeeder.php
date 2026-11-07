@@ -11,8 +11,13 @@ use App\Domain\Organization\Models\Team;
 use App\Domain\ServiceLevel\Models\BusinessCalendar;
 use App\Domain\ServiceLevel\Models\SlaPolicy;
 use App\Domain\Shared\Enums\Icon;
+use App\Domain\Ticketing\Actions\ChangeTicketStatus;
+use App\Domain\Ticketing\Actions\CreateTicket;
+use App\Domain\Ticketing\Actions\ReplyToTicket;
+use App\Domain\Ticketing\Actions\TakeTicket;
 use App\Domain\Ticketing\Enums\MessageTemplatePurpose;
 use App\Domain\Ticketing\Enums\TicketPriority;
+use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Enums\TicketType;
 use App\Domain\Ticketing\Models\MessageTemplate;
 use Illuminate\Database\Seeder;
@@ -98,6 +103,53 @@ class DemoSeeder extends Seeder
             'department_id' => $departments['Operaciones Clínicas']->id,
             'location_id' => $locations['Sede Sur']->id,
         ]);
+
+        $this->seedTickets();
+    }
+
+    /**
+     * Tickets from the prototype, created through the real actions so the
+     * acknowledgements, greetings and SLA deadlines come out as in production.
+     */
+    private function seedTickets(): void
+    {
+        $people = User::query()->get()->keyBy('email');
+        $categories = Category::query()->get()->keyBy('name');
+        $createTicket = app(CreateTicket::class);
+        $takeTicket = app(TakeTicket::class);
+        $reply = app(ReplyToTicket::class);
+        $changeStatus = app(ChangeTicketStatus::class);
+
+        $open = fn (string $requester, string $category, string $subject, string $description, TicketPriority $priority) => $createTicket->handle(
+            $people["{$requester}@example.com"],
+            [
+                'category_id' => $categories[$category]->id,
+                'subject' => $subject,
+                'description' => $description,
+                'priority' => $priority->value,
+            ],
+        );
+
+        $open('carolina.mendez', 'Accesos y claves', 'Nuevo ingreso: crear usuario y correo (Marketing)', 'Inicia el lunes. Necesita acceso al SharePoint de Marketing.', TicketPriority::Medium);
+        $open('jorge.pena', 'Correo y Teams', 'Outlook se cierra al abrir adjuntos', 'Ocurre con archivos de Excel desde ayer.', TicketPriority::High);
+        $open('carolina.mendez', 'Incidente en Dialisoft', 'Error al cerrar sesión de hemodiálisis', 'Al cerrar la sesión aparece el error 504 y no guarda los datos del paciente.', TicketPriority::High);
+
+        $vpn = $open('carolina.mendez', 'Red, WiFi y VPN', 'No puedo conectarme a la VPN desde casa', 'Desde ayer el cliente VPN muestra "error 809". Estoy en trabajo remoto.', TicketPriority::High);
+        $luis = $people['luis.pardo@example.com'];
+        $takeTicket->handle($vpn, $luis);
+        $reply->handle($vpn, $luis, '¿Puedes confirmar si tu red doméstica bloquea el puerto UDP 500?');
+        $changeStatus->handle($vpn->refresh(), TicketStatus::WaitingOnRequester, $luis);
+
+        $sap = $open('jorge.pena', 'Accesos y roles en SAP', 'Solicitud de rol de compras en SAP', 'Necesito el rol de compras para aprobar pedidos.', TicketPriority::Medium);
+        $marco = $people['marco.diaz@example.com'];
+        $takeTicket->handle($sap, $marco);
+        $reply->handle($sap, $marco, 'Falta la aprobación del jefe de Jorge. Ya le escribí.', isInternalNote: true);
+
+        $monitor = $open('carolina.mendez', 'Equipo y hardware', 'Monitor secundario parpadea', 'Parpadea cada pocos minutos.', TicketPriority::Low);
+        $ana = $people['ana.torres@example.com'];
+        $takeTicket->handle($monitor, $ana);
+        $reply->handle($monitor, $ana, 'Cambiamos el cable HDMI de tu puesto. ¿Puedes confirmar si ya funciona?');
+        $changeStatus->handle($monitor->refresh(), TicketStatus::Resolved, $ana);
     }
 
     /**

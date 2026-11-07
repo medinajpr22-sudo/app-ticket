@@ -5,6 +5,10 @@ namespace App\Providers;
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Domain\Identity\Listeners\RecordLastLogin;
 use App\Domain\Identity\Models\User;
+use App\Domain\Ticketing\Events\TicketCreated;
+use App\Domain\Ticketing\Events\TicketTaken;
+use App\Domain\Ticketing\Listeners\SendAcknowledgementMessage;
+use App\Domain\Ticketing\Listeners\SendGreetingMessage;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
@@ -39,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
 
         Event::listen(Login::class, RecordLastLogin::class);
+        Event::listen(TicketCreated::class, SendAcknowledgementMessage::class);
+        Event::listen(TicketTaken::class, SendGreetingMessage::class);
     }
 
     /**

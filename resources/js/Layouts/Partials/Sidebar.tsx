@@ -34,7 +34,7 @@ export default function Sidebar({
                             </p>
                             <ul>
                                 {section.items.map((item) => {
-                                    const isCurrent = route().current(item.activePattern);
+                                    const isCurrent = item.activePatterns.some((pattern) => route().current(pattern));
 
                                     return (
                                         <li key={item.routeName}>

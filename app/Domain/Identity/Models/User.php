@@ -128,6 +128,11 @@ class User extends Authenticatable
         $query->whereHas('role', fn (Builder $roleQuery) => $roleQuery->whereIn('slug', RoleSlug::staff()));
     }
 
+    public function belongsToTeam(int $teamId): bool
+    {
+        return $this->teams->contains('id', $teamId);
+    }
+
     public function hasRole(RoleSlug $role): bool
     {
         return $this->role->slug === $role;

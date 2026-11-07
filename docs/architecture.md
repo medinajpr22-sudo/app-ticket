@@ -234,6 +234,78 @@ erDiagram
 - Las variables válidas están en `TemplateVariable`. `{{agent.name}}` no se permite en el acuse
   de recibo porque todavía no hay agente. `MessageTemplateSeeder` crea las tres generales.
 
+Tickets:
+
+```mermaid
+erDiagram
+  users ||--o{ tickets : "solicita y crea"
+  users |o--o{ tickets : "atiende"
+  teams ||--o{ tickets : "recibe"
+  categories ||--o{ tickets : "clasifica"
+  business_calendars ||--o{ tickets : "mide su SLA"
+  tickets ||--|{ ticket_messages : "conversacion"
+  tickets ||--o{ ticket_status_changes : "historial de estado"
+  tickets ||--o{ ticket_assignments : "historial de asignacion"
+
+  tickets {
+    bigint id PK
+    bigint requester_id FK
+    bigint creator_id FK
+    bigint team_id FK
+    bigint category_id FK
+    bigint assignee_id FK "null = sin asignar"
+    bigint business_calendar_id FK "horario con el que se calculo el SLA"
+    string type
+    string status
+    string priority
+    string channel
+    string subject
+    timestamp first_response_due_at
+    timestamp resolution_due_at
+    timestamp first_responded_at
+    timestamp sla_paused_at "mientras espera al usuario"
+    timestamp resolved_at
+    timestamp closed_at
+  }
+  ticket_messages {
+    bigint id PK
+    bigint ticket_id FK
+    bigint author_id FK "null = automatico"
+    string type "reply, internal_note, automated"
+    text body
+  }
+  ticket_status_changes {
+    bigint id PK
+    bigint ticket_id FK
+    bigint user_id FK "null = sistema"
+    string from_status
+    string to_status
+  }
+  ticket_assignments {
+    bigint id PK
+    bigint ticket_id FK
+    bigint team_id FK
+    bigint assignee_id FK
+    bigint user_id FK "quien asigno"
+  }
+```
+
+Flujo y reglas:
+
+- **Crear (portal):** la categoría decide equipo, tipo y política de SLA. Las fechas de vencimiento
+  se calculan en horas laborales con `BusinessTimeCalculator`. La descripción es el primer mensaje.
+  El evento `TicketCreated` dispara `SendAcknowledgementMessage`.
+- **Tomar (bandeja):** asignación atómica (`TakeTicket`): si dos agentes pulsan a la vez, solo uno
+  gana. El evento `TicketTaken` dispara `SendGreetingMessage`, que envía el saludo del equipo en
+  nombre del agente y cuenta como primera respuesta.
+- **Responder:** hay que tomar el ticket antes de responder al solicitante; las notas internas no
+  lo exigen y nunca llegan al portal. Si el solicitante responde a un ticket en espera o resuelto,
+  vuelve a "En proceso".
+- **SLA:** "Esperando al usuario" pausa el reloj (`sla_paused_at`). Al reanudar, las fechas
+  pendientes se corren el tiempo laboral que estuvo en pausa. `TicketSlaTracker` indica si va en
+  plazo, en riesgo (queda menos del 25 %), vencido, en pausa, cumplido o incumplido.
+- **Permisos:** `TicketPolicy`. El solicitante solo ve sus tickets; el agente, los de sus equipos.
+
 ### Ajustes frente a la propuesta inicial
 
 - `roles` y `permissions` solo guardan el `slug`: el nombre y la descripción salen de las
@@ -243,4 +315,5 @@ erDiagram
 
 ### Próximas tablas
 
-SSO (`identity_providers`, `directory_groups`, `directory_group_team`), tickets y auditoría.
+Adjuntos, observadores y calificación de tickets, auditoría y SSO (`identity_providers`,
+`directory_groups`, `directory_group_team`).

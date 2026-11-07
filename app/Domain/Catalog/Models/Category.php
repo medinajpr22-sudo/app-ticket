@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 /**
  * What people can ask for. Each category routes its tickets to one team.
@@ -73,5 +74,14 @@ class Category extends Model
     public function slaPolicy(): BelongsTo
     {
         return $this->belongsTo(SlaPolicy::class);
+    }
+
+    /**
+     * The policy its tickets follow: its own, or the default one.
+     */
+    public function effectiveSlaPolicy(): SlaPolicy
+    {
+        return $this->slaPolicy ?? SlaPolicy::findDefault()
+            ?? throw new LogicException('There is no default SLA policy. Run the ServiceLevelSeeder.');
     }
 }

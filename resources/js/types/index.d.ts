@@ -163,6 +163,53 @@ export interface MessageTemplate {
     updated_at: string | null;
 }
 
+export type TicketStatusValue =
+    | 'new'
+    | 'in_progress'
+    | 'waiting_on_requester'
+    | 'waiting_on_third_party'
+    | 'resolved'
+    | 'closed'
+    | 'cancelled';
+
+export type SlaStateValue = 'on_track' | 'at_risk' | 'breached' | 'paused' | 'met' | 'missed';
+
+export type TicketMessageTypeValue = 'reply' | 'internal_note' | 'automated';
+
+export interface TicketMessage {
+    id: number;
+    type: TicketMessageTypeValue;
+    body: string;
+    created_at: string;
+    author: { id: number; name: string; initials: string } | null;
+}
+
+export interface TicketSla {
+    state: Option<SlaStateValue>;
+    target: 'first_response' | 'resolution';
+    due_at: string;
+}
+
+export interface Ticket {
+    id: number;
+    subject: string;
+    status: Option<TicketStatusValue>;
+    is_open: boolean;
+    priority: Option<TicketPriorityValue>;
+    type: Option<TicketTypeValue>;
+    channel: string;
+    created_at: string;
+    updated_at: string | null;
+    first_responded_at: string | null;
+    resolved_at: string | null;
+    requester?: User;
+    assignee?: User | null;
+    team?: { id: number; name: string; icon: IconName };
+    category?: { id: number; name: string; icon: IconName };
+    sla?: TicketSla;
+    messages?: TicketMessage[];
+}
+
 export interface PaginationLink {
     url: string | null;
     label: string;

@@ -58,6 +58,31 @@ return [
         'Low' => 'Baja',
     ],
 
+    'ticket_status' => [
+        'New' => 'Recibido',
+        'InProgress' => 'En proceso',
+        'WaitingOnRequester' => 'Esperando al usuario',
+        'WaitingOnThirdParty' => 'Esperando a un tercero',
+        'Resolved' => 'Resuelto',
+        'Closed' => 'Cerrado',
+        'Cancelled' => 'Cancelado',
+    ],
+
+    'sla_state' => [
+        'OnTrack' => 'En plazo',
+        'AtRisk' => 'En riesgo',
+        'Breached' => 'Vencido',
+        'Paused' => 'En pausa',
+        'Met' => 'Cumplido',
+        'Missed' => 'Incumplido',
+    ],
+
+    'ticket_channel' => [
+        'Portal' => 'Portal',
+        'Email' => 'Correo',
+        'Phone' => 'Teléfono',
+    ],
+
     'ticket_type' => [
         'Incident' => 'Incidente',
         'ServiceRequest' => 'Solicitud',
