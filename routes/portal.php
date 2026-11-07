@@ -2,7 +2,6 @@
 
 use App\Domain\Identity\Enums\PermissionSlug;
 use App\Http\Controllers\Portal\TicketArchiveController;
-use App\Http\Controllers\Portal\TicketClosureController;
 use App\Http\Controllers\Portal\TicketController;
 use App\Http\Controllers\Portal\TicketMessageController;
 use App\Http\Controllers\Portal\TicketRatingController;
@@ -30,7 +29,6 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
 
     Route::get('tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('tickets/{ticket}/messages', [TicketMessageController::class, 'store'])->name('tickets.messages.store');
-    Route::post('tickets/{ticket}/closure', [TicketClosureController::class, 'store'])->name('tickets.closure.store');
     Route::delete('tickets/{ticket}/resolution', [TicketResolutionController::class, 'destroy'])->name('tickets.resolution.destroy');
     Route::post('tickets/{ticket}/archive', [TicketArchiveController::class, 'store'])->name('tickets.archive.store');
     Route::delete('tickets/{ticket}/archive', [TicketArchiveController::class, 'destroy'])->name('tickets.archive.destroy');

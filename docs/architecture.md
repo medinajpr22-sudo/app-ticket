@@ -339,7 +339,7 @@ Flujo y reglas:
 Observadores de tickets, recordatorios y cierre automático, auditoría y SSO (`identity_providers`, `directory_groups`,
 `directory_group_team`).
 
-## Cierre por el usuario, líderes, notificaciones y estadísticas
+## Cierre, líderes, notificaciones y estadísticas
 
 Migraciones `2026_11_09_000001`–`000004`.
 
@@ -366,17 +366,27 @@ quedaron retirados: la migración movió sus tickets a "En proceso" (o "Recibido
 responsable) y a "Cerrado", y dejó ese paso en el historial con `user_id` nulo. Los casos siguen
 en el enum, marcados `@deprecated`, solo para que el historial anterior se pueda leer; no se ofrecen
 en filtros ni cambios de estado. El agente puede pasar un ticket a En proceso, Esperando al
-usuario, Resuelto o Cerrado, siempre que alguien lo tenga asignado.
+usuario, Resuelto o Cerrado, siempre que alguien lo tenga asignado. Cerrado es el único estado final.
 
-**Cierre por el usuario.** En "¿Ya se resolvió?" el solicitante puede:
+**Cierre.** Solo TI cierra tickets, y dentro de TI solo **el agente que tiene el ticket asignado**
+(`TicketPolicy::close`); un compañero o el líder que deba cerrarlo lo toma primero. Los demás
+cambios de estado los puede hacer cualquier integrante del equipo con el permiso. El agente elige
+"Cerrado" y confirma, y queda guardado quién
+(`closed_by_id`) y cuándo (`closed_at`). Cerrar es definitivo: nadie escribe, toma, cambia de estado
+ni reabre un ticket cerrado (`TicketPolicy` en las rutas y `ChangeTicketStatus`, que lanza
+`TicketIsClosed`, en el dominio). Si el problema vuelve, el solicitante crea un ticket nuevo; la
+pantalla del ticket cerrado se lo dice y le ofrece el botón.
 
-- *Marcar como resuelto*: el ticket pasa a Cerrado y guarda quién (`closed_by_id`) y cuándo
-  (`closed_at`). Si TI ya lo había resuelto, se conserva esa hora de resolución.
-- *Quitar de mi lista*: archiva (`requester_archived_at`); no borra nada y TI lo sigue viendo.
-  Si el ticket seguía abierto, primero se cierra, porque quitarlo significa que ya no necesita
-  ayuda. Se recupera desde el filtro *Archivados*. Reabrir un ticket lo desarchiva.
+Mientras el ticket está "Resuelto", el solicitante no lo cierra: si todo está bien no hace nada, y si
+el problema sigue pulsa *No, el problema sigue* (o responde) y vuelve a "En proceso".
 
-Ambas acciones piden confirmación. Después aparece la encuesta de satisfacción.
+*Quitar de mi lista* archiva un ticket ya cerrado (`requester_archived_at`): no borra nada y TI lo
+sigue viendo. Se recupera desde el filtro *Archivados*. Pide confirmación.
+
+**Historial** (`desk/history`). Los tickets que los equipos de la persona resolvieron o cerraron,
+los más recientes primero (por fecha de resolución o, si no la tiene, de cierre). Filtra por
+*Mis tickets*, estado (resueltos o cerrados), equipo, asunto o número y fechas. Muestra quién lo
+atendió, cuándo se resolvió, quién lo cerró, si cumplió el SLA y la calificación.
 
 **Tomar un ticket** (`TakeTicket`). Sirve para un ticket sin responsable y para quitárselo a un
 compañero. La página envía a quién vio como responsable (`assignee_id`); la asignación es un

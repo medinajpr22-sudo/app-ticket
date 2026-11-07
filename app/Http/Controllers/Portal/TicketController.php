@@ -128,7 +128,6 @@ class TicketController extends Controller
             'attachmentLimits' => TicketAttachment::limits(),
             'can' => [
                 'reply' => Gate::allows('reply', $ticket),
-                'close' => Gate::allows('close', $ticket),
                 'reopen' => Gate::allows('reopen', $ticket),
                 'archive' => Gate::allows('archive', $ticket),
                 'unarchive' => Gate::allows('unarchive', $ticket),

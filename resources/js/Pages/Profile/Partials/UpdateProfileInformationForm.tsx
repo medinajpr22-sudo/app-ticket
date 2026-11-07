@@ -99,14 +99,8 @@ export default function UpdateProfileInformation({
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Guardar</PrimaryButton>
 
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p role="status" className="text-sm font-bold text-success">
+                    <Transition show={recentlySuccessful}>
+                        <p role="status" className="text-sm font-bold text-success transition ease-in-out data-closed:opacity-0">
                             Cambios guardados.
                         </p>
                     </Transition>

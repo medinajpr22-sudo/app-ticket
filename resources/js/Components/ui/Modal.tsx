@@ -1,11 +1,12 @@
-import {
-    Dialog,
-    DialogPanel,
-    Transition,
-    TransitionChild,
-} from '@headlessui/react';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { PropsWithChildren } from 'react';
 
+/**
+ * A dialog over the page. The dimmed backdrop and the panel are separate
+ * fixed layers, the panel on top, so the backdrop never covers the buttons.
+ * Animations use Headless UI's data attributes (`data-closed`), which do not
+ * depend on swapping classes in sequence and cannot get stuck half-way.
+ */
 export default function Modal({
     children,
     show = false,
@@ -33,39 +34,22 @@ export default function Modal({
     }[maxWidth];
 
     return (
-        <Transition show={show} leave="duration-200">
-            <Dialog
-                as="div"
-                id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
-                onClose={close}
-            >
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="absolute inset-0 bg-[rgb(30_6_9/0.55)] backdrop-blur-sm" />
-                </TransitionChild>
+        <Dialog open={show} onClose={close} className="relative z-50">
+            <DialogBackdrop
+                transition
+                className="fixed inset-0 bg-[rgb(30_6_9/0.55)] backdrop-blur-sm transition-opacity duration-300 ease-out data-closed:opacity-0 data-leave:duration-200 data-leave:ease-in"
+            />
 
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
+            <div className="fixed inset-0 overflow-y-auto">
+                <div className="flex min-h-full items-center justify-center px-4 py-6">
                     <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded-[20px] border border-white/75 bg-white/95 shadow-xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
+                        transition
+                        className={`w-full overflow-hidden rounded-[20px] border border-white/75 bg-white shadow-xl transition duration-300 ease-out data-closed:translate-y-4 data-closed:opacity-0 data-leave:duration-200 data-leave:ease-in sm:data-closed:translate-y-0 sm:data-closed:scale-95 ${maxWidthClass}`}
                     >
                         {children}
                     </DialogPanel>
-                </TransitionChild>
-            </Dialog>
-        </Transition>
+                </div>
+            </div>
+        </Dialog>
     );
 }

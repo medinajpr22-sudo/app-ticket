@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\ServiceLevel\Services\BusinessTimeCalculator;
 use App\Domain\Ticketing\Enums\TicketStatus;
 use App\Domain\Ticketing\Events\TicketStatusChanged;
+use App\Domain\Ticketing\Exceptions\TicketIsClosed;
 use App\Domain\Ticketing\Models\Ticket;
 use Illuminate\Support\Facades\DB;
 
@@ -17,12 +18,20 @@ class ChangeTicketStatus
      * Move a ticket to another status and keep its SLA honest: the clock stops
      * while waiting on the requester and the deadlines move by the paused time.
      *
+     * Closing is final: a closed ticket never changes status again.
+     *
      * @param  User|null  $actor  Who made the change; null when the system did.
+     *
+     * @throws TicketIsClosed when the ticket was already closed.
      */
     public function handle(Ticket $ticket, TicketStatus $status, ?User $actor): Ticket
     {
         if ($ticket->status === $status) {
             return $ticket;
+        }
+
+        if ($ticket->status === TicketStatus::Closed) {
+            throw TicketIsClosed::cannotChangeStatus($ticket);
         }
 
         return DB::transaction(function () use ($ticket, $status, $actor): Ticket {
@@ -50,9 +59,6 @@ class ChangeTicketStatus
 
             if ($status->isOpen()) {
                 $ticket->resolved_at = null;
-                $ticket->closed_at = null;
-                $ticket->closed_by_id = null;
-                $ticket->requester_archived_at = null;
             }
 
             $ticket->save();

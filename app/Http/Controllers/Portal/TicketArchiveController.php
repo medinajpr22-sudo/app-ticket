@@ -2,23 +2,21 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Domain\Ticketing\Actions\ArchiveTicket;
 use App\Domain\Ticketing\Models\Ticket;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class TicketArchiveController extends Controller
 {
     /**
-     * The requester takes the ticket off their list.
+     * The requester takes a closed ticket off their list. Nothing is deleted.
      */
-    public function store(Request $request, Ticket $ticket, ArchiveTicket $archiveTicket): RedirectResponse
+    public function store(Ticket $ticket): RedirectResponse
     {
         Gate::authorize('archive', $ticket);
 
-        $archiveTicket->handle($ticket, $request->user());
+        $ticket->forceFill(['requester_archived_at' => now()])->save();
 
         return to_route('portal.tickets.index')->with('success', __('Ticket removed from your list.'));
     }

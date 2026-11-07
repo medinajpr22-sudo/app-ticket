@@ -64,6 +64,14 @@ export const navigation: NavigationSection[] = [
                 requires: 'team',
             },
             {
+                label: 'Historial',
+                routeName: 'desk.history.index',
+                activePatterns: ['desk.history.*'],
+                icon: 'book',
+                permissions: ['tickets.view_team'],
+                requires: 'team',
+            },
+            {
                 label: 'Mi equipo',
                 routeName: 'desk.teams.index',
                 activePatterns: ['desk.teams.*'],

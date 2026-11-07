@@ -91,9 +91,10 @@ class TicketNotificationsTest extends TestCase
 
         app(ChangeTicketStatus::class)->handle($ticket, TicketStatus::WaitingOnRequester, $this->agent);
         app(ChangeTicketStatus::class)->handle($ticket, TicketStatus::InProgress, $this->requester);
-        app(ChangeTicketStatus::class)->handle($ticket, TicketStatus::Closed, $this->requester);
+        app(ChangeTicketStatus::class)->handle($ticket, TicketStatus::Resolved, $this->agent);
+        app(ChangeTicketStatus::class)->handle($ticket, TicketStatus::InProgress, $this->requester);
 
-        Notification::assertSentToTimes($this->requester, TicketActivityNotification::class, 1);
+        Notification::assertSentToTimes($this->requester, TicketActivityNotification::class, 2);
     }
 
     public function test_the_requester_learns_which_team_continues_after_a_transfer(): void

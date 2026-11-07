@@ -13,13 +13,16 @@ use Illuminate\Support\Facades\Gate;
 class TicketStatusController extends Controller
 {
     /**
-     * Move the ticket to another status.
+     * Move the ticket to another status. Closing it is reserved to the agent
+     * in charge of it.
      */
     public function update(UpdateTicketStatusRequest $request, Ticket $ticket, ChangeTicketStatus $changeStatus): RedirectResponse
     {
-        Gate::authorize('changeStatus', $ticket);
+        $status = TicketStatus::from($request->validated('status'));
 
-        $changeStatus->handle($ticket, TicketStatus::from($request->validated('status')), $request->user());
+        Gate::authorize($status === TicketStatus::Closed ? 'close' : 'changeStatus', $ticket);
+
+        $changeStatus->handle($ticket, $status, $request->user());
 
         return to_route('desk.tickets.show', $ticket)->with('success', __('Status updated.'));
     }

@@ -113,6 +113,44 @@ class TicketStatusControllerTest extends TestCase
             ]));
     }
 
+    public function test_only_the_agent_in_charge_closes_the_ticket(): void
+    {
+        $colleague = User::factory()->admin()->create();
+        $colleague->teams()->attach($this->ticket->team_id, ['is_lead' => true]);
+
+        $this->actingAs($colleague)
+            ->put(route('desk.tickets.status.update', $this->ticket), ['status' => TicketStatus::Closed->value])
+            ->assertForbidden();
+
+        $this->assertSame(TicketStatus::InProgress, $this->ticket->refresh()->status);
+
+        $this->actingAs($colleague)
+            ->put(route('desk.tickets.status.update', $this->ticket), ['status' => TicketStatus::WaitingOnRequester->value])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(TicketStatus::WaitingOnRequester, $this->ticket->refresh()->status);
+    }
+
+    public function test_closing_is_only_offered_to_the_agent_in_charge(): void
+    {
+        $colleague = User::factory()->admin()->create();
+        $colleague->teams()->attach($this->ticket->team_id);
+
+        $this->actingAs($colleague)
+            ->get(route('desk.tickets.show', $this->ticket))
+            ->assertInertia(fn ($page) => $page
+                ->where('can.close', false)
+                ->where('statusOptions', [
+                    ['value' => 'in_progress', 'label' => 'En proceso'],
+                    ['value' => 'waiting_on_requester', 'label' => 'Esperando al usuario'],
+                    ['value' => 'resolved', 'label' => 'Resuelto'],
+                ]));
+
+        $this->actingAs($this->agent)
+            ->get(route('desk.tickets.show', $this->ticket))
+            ->assertInertia(fn ($page) => $page->where('can.close', true)->has('statusOptions', 4));
+    }
+
     public function test_a_received_ticket_is_taken_before_its_status_changes(): void
     {
         $received = Ticket::factory()->create(['team_id' => $this->ticket->team_id]);

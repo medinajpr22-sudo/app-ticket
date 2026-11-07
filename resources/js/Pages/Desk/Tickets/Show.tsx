@@ -57,6 +57,7 @@ export default function Show({
         take: boolean;
         respond: boolean;
         changeStatus: boolean;
+        close: boolean;
         changePriority: boolean;
         assign: boolean;
         transfer: boolean;
@@ -67,6 +68,18 @@ export default function Show({
     const [status, setStatus] = useState<TicketStatusValue>(ticket.status.value);
     const [isTakeDialogOpen, setIsTakeDialogOpen] = useState(false);
     const [isTaking, setIsTaking] = useState(false);
+    const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
+
+    const changeStatus = () =>
+        router.put(route('desk.tickets.status.update', ticket.id), { status }, {
+            preserveScroll: true,
+            onStart: () => setIsChangingStatus(true),
+            onFinish: () => {
+                setIsChangingStatus(false);
+                setIsCloseDialogOpen(false);
+            },
+        });
 
     /**
      * Take the ticket from whoever the agent sees on the screen. If it changed
@@ -223,12 +236,22 @@ export default function Show({
                                     El reloj del SLA se detiene mientras esperas al usuario.
                                 </p>
                             )}
+                            {status === 'closed' && (
+                                <p className="mt-2 text-sm font-semibold text-muted">
+                                    Cerrar es definitivo: el ticket no se podrá reabrir.
+                                </p>
+                            )}
+                            {!can.close && (
+                                <p className="mt-2 text-sm font-semibold text-muted">
+                                    Solo quien tiene el ticket asignado puede cerrarlo.
+                                </p>
+                            )}
                             <InputError message={errors.status} />
                             <SecondaryButton
                                 size="sm"
                                 className="mt-3 w-full"
                                 disabled={status === ticket.status.value}
-                                onClick={() => router.put(route('desk.tickets.status.update', ticket.id), { status }, { preserveScroll: true })}
+                                onClick={() => (status === 'closed' ? setIsCloseDialogOpen(true) : changeStatus())}
                             >
                                 Cambiar estado
                             </SecondaryButton>
@@ -284,6 +307,18 @@ export default function Show({
                 {ticket.assignee
                     ? `Ahora lo atiende ${ticket.assignee.name}. Si lo tomas, quedará a tu nombre y podrás escribir en el chat.`
                     : 'Quedará asignado a ti, el solicitante recibirá el saludo de tu equipo y podrás escribir en el chat.'}
+            </ConfirmDialog>
+
+            <ConfirmDialog
+                show={isCloseDialogOpen}
+                title="¿Cerrar el ticket?"
+                confirmLabel="Sí, cerrar ticket"
+                processing={isChangingStatus}
+                onConfirm={changeStatus}
+                onClose={() => setIsCloseDialogOpen(false)}
+            >
+                Cerrar es definitivo: nadie podrá volver a escribir en él ni reabrirlo. Si el problema vuelve, el
+                solicitante tendrá que crear un ticket nuevo.
             </ConfirmDialog>
         </AppLayout>
     );

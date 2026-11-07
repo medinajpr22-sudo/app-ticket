@@ -24,25 +24,23 @@ class TicketPolicy
     }
 
     /**
-     * The requester no longer needs help, whether IT already proposed a
-     * solution or not, and closes the ticket themselves.
+     * The requester says the solution IT proposed did not work. Only a
+     * resolved ticket goes back: a closed one is final.
      */
-    public function close(User $user, Ticket $ticket): bool
-    {
-        return $this->view($user, $ticket) && $this->acceptsMessages($ticket);
-    }
-
     public function reopen(User $user, Ticket $ticket): bool
     {
         return $this->view($user, $ticket) && $ticket->status === TicketStatus::Resolved;
     }
 
     /**
-     * Take the ticket off the requester's list. It stays in the desk as it is.
+     * Take a finished ticket off the requester's list. It stays in the desk
+     * as it is. Only IT closes tickets, so the requester only hides closed ones.
      */
     public function archive(User $user, Ticket $ticket): bool
     {
-        return $this->view($user, $ticket) && $ticket->requester_archived_at === null;
+        return $this->view($user, $ticket)
+            && $ticket->status === TicketStatus::Closed
+            && $ticket->requester_archived_at === null;
     }
 
     public function unarchive(User $user, Ticket $ticket): bool
@@ -103,6 +101,15 @@ class TicketPolicy
     }
 
     /**
+     * Closing is final, so only the agent in charge of the ticket does it.
+     * Anyone else who must close it takes the ticket first.
+     */
+    public function close(User $user, Ticket $ticket): bool
+    {
+        return $this->changeStatus($user, $ticket) && $ticket->assignee_id === $user->id;
+    }
+
+    /**
      * Hand an open ticket to another agent of its team.
      */
     public function assign(User $user, Ticket $ticket): bool
@@ -128,7 +135,8 @@ class TicketPolicy
     }
 
     /**
-     * Closed tickets keep their conversation as it was.
+     * Closed tickets are final: they keep their conversation as it was and
+     * nobody writes in them, takes them or reopens them.
      */
     private function acceptsMessages(Ticket $ticket): bool
     {

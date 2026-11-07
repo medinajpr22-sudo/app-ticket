@@ -230,6 +230,32 @@ class Ticket extends Model
     }
 
     /**
+     * Tickets whose subject contains the text, or whose number it is ("#12" or "12").
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function matching(Builder $query, string $search): void
+    {
+        $number = ltrim($search, '#');
+
+        $query->where(fn (Builder $query) => $query
+            ->whereLike('subject', "%{$search}%")
+            ->when(ctype_digit($number), fn (Builder $query) => $query->orWhere('id', (int) $number)));
+    }
+
+    /**
+     * Tickets IT finished: resolved or closed.
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function finished(Builder $query): void
+    {
+        $query->whereIn('status', [TicketStatus::Resolved, TicketStatus::Closed]);
+    }
+
+    /**
      * Tickets that belong to the teams the user is a member of.
      *
      * @param  Builder<Ticket>  $query

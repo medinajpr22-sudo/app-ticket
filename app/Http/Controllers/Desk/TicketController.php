@@ -48,11 +48,7 @@ class TicketController extends Controller
             ->when($status === 'open', fn (Builder $query) => $query->open())
             ->when(! in_array($status, ['open', 'all'], true), fn (Builder $query) => $query->where('status', $status))
             ->when($filters['team'] ?? null, fn (Builder $query, int|string $team) => $query->where('team_id', $team))
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(
-                fn (Builder $query) => $query
-                    ->whereLike('subject', "%{$search}%")
-                    ->when(ctype_digit(ltrim($search, '#')), fn (Builder $query) => $query->orWhere('id', (int) ltrim($search, '#'))),
-            ))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->matching($search))
             ->with(['requester', 'assignee', 'team', 'category', 'businessCalendar.hours', 'businessCalendar.holidays'])
             ->orderByUrgency()
             ->paginate(20)
@@ -118,10 +114,13 @@ class TicketController extends Controller
                 'name' => $template->name,
                 'body' => $renderer->render($template->body, $ticket, $request->user()),
             ])->all(),
-            'statusOptions' => array_map(fn (TicketStatus $status): array => [
+            'statusOptions' => array_values(array_map(fn (TicketStatus $status): array => [
                 'value' => $status->value,
                 'label' => $status->label(),
-            ], TicketStatus::agentChoices()),
+            ], array_filter(
+                TicketStatus::agentChoices(),
+                fn (TicketStatus $status): bool => $status !== TicketStatus::Closed || Gate::allows('close', $ticket),
+            ))),
             'priorityOptions' => TicketPriority::options(),
             'teamMembers' => $teamMembers->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])->all(),
             'otherTeams' => $otherTeams->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])->all(),
@@ -130,6 +129,7 @@ class TicketController extends Controller
                 'take' => Gate::allows('take', $ticket),
                 'respond' => Gate::allows('respond', $ticket),
                 'changeStatus' => Gate::allows('changeStatus', $ticket),
+                'close' => Gate::allows('close', $ticket),
                 'changePriority' => Gate::allows('changePriority', $ticket),
                 'assign' => Gate::allows('assign', $ticket),
                 'transfer' => Gate::allows('transfer', $ticket),

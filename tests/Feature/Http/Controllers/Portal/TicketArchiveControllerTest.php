@@ -46,17 +46,16 @@ class TicketArchiveControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->has('tickets.data', 1)->where('tickets.data.0.subject', 'Monitor parpadea'));
     }
 
-    public function test_removing_an_open_ticket_closes_it_first(): void
+    public function test_only_closed_tickets_can_be_removed_from_the_list(): void
     {
-        $ticket = Ticket::factory()->for($this->requester, 'requester')->create();
+        foreach ([Ticket::factory()->for($this->requester, 'requester')->create(), Ticket::factory()->for($this->requester, 'requester')->resolved()->create()] as $ticket) {
+            $this->actingAs($this->requester)
+                ->post(route('portal.tickets.archive.store', $ticket))
+                ->assertForbidden();
 
-        $this->actingAs($this->requester)->post(route('portal.tickets.archive.store', $ticket));
-
-        $ticket->refresh();
-
-        $this->assertSame(TicketStatus::Closed, $ticket->status);
-        $this->assertTrue($ticket->closedBy()->is($this->requester));
-        $this->assertNotNull($ticket->requester_archived_at);
+            $this->assertNotSame(TicketStatus::Closed, $ticket->refresh()->status);
+            $this->assertNull($ticket->requester_archived_at);
+        }
     }
 
     public function test_the_requester_can_bring_an_archived_ticket_back(): void
